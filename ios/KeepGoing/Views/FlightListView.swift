@@ -141,7 +141,7 @@ struct FlightRow: View {
     private func subtitle(_ info: WatchInfo) -> String {
         var text = "\(info.origin) → \(info.destination) · \(Format.period(info.depart))"
         if let ret = info.returnDate {
-            text += " – \(Format.period(ret))"
+            text += ret == info.depart ? " · andata e ritorno" : " – \(Format.period(ret))"
         }
         return text
     }
