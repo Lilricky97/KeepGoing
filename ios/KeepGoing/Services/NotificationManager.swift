@@ -14,6 +14,16 @@ final class NotificationManager: ObservableObject {
 
     private let tokenKey = "apns.deviceToken"
 
+    /// Nel simulatore le notifiche push vere non arrivano: si provano trascinando
+    /// il file notifica-di-prova.apns sulla finestra del simulatore.
+    static let isSimulator: Bool = {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }()
+
     init() {
         deviceToken = UserDefaults.standard.string(forKey: tokenKey)
     }
@@ -21,7 +31,7 @@ final class NotificationManager: ObservableObject {
     func refreshStatus() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         authorization = settings.authorizationStatus
-        if authorization == .authorized || authorization == .provisional {
+        if !Self.isSimulator, authorization == .authorized || authorization == .provisional {
             // Apple consiglia di registrarsi a ogni avvio: il token può cambiare.
             UIApplication.shared.registerForRemoteNotifications()
         }

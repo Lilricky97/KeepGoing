@@ -155,3 +155,20 @@ class ApnsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SimulatorPushFileTest(unittest.TestCase):
+    """ios/notifica-di-prova.apns deve restare allineato al payload vero e all'app."""
+
+    def test_matches_payload_and_app(self):
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parent.parent
+        push = json.loads((root / "ios" / "notifica-di-prova.apns").read_text(encoding="utf-8"))
+        expected = build_payload(Notification("T", "B", url="https://x.test", watch_id="w"))
+        self.assertEqual(set(push) - {"Simulator Target Bundle"}, set(expected))
+        self.assertEqual(set(push["aps"]), set(expected["aps"]))
+        project = (root / "ios" / "KeepGoing.xcodeproj" / "project.pbxproj").read_text(encoding="utf-8")
+        self.assertIn(f"PRODUCT_BUNDLE_IDENTIFIER = {push['Simulator Target Bundle']};", project)
+        sample = (root / "ios" / "KeepGoing" / "Models" / "PriceData+Sample.swift").read_text(encoding="utf-8")
+        self.assertIn(f'"{push["watch_id"]}"', sample)  # toccandola si apre un volo di esempio

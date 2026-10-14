@@ -13,6 +13,16 @@ struct FlightListView: View {
                 if notifications.authorization == .notDetermined {
                     Section { NotificationPrompt() }
                 }
+                if store.isShowingSample {
+                    Section {
+                        Label(
+                            "Questi sono voli di esempio: appena il motore su GitHub fa il primo controllo vedrai i tuoi.",
+                            systemImage: "info.circle.fill"
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(.blue)
+                    }
+                }
                 if let error = store.errorMessage {
                     Section {
                         Label(error, systemImage: "exclamationmark.triangle.fill")

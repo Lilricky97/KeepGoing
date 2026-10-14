@@ -74,6 +74,10 @@ struct SettingsView: View {
             }
         } header: {
             Text("Notifiche")
+        } footer: {
+            if NotificationManager.isSimulator {
+                Text("Sei nel simulatore: per provare una notifica trascina il file notifica-di-prova.apns sulla finestra del simulatore.")
+            }
         }
     }
 

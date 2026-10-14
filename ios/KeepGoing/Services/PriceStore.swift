@@ -5,6 +5,8 @@ import Foundation
 final class PriceStore: ObservableObject {
     @Published private(set) var data: PriceData?
     @Published private(set) var isLoading = false
+    /// True finché non ci sono dati veri: si vedono i voli di esempio.
+    @Published private(set) var isShowingSample = false
     @Published var errorMessage: String?
 
     private let cacheURL: URL
@@ -35,6 +37,7 @@ final class PriceStore: ObservableObject {
         do {
             let raw = try await GitHubSource.current().fetchPrices()
             data = try PriceData.decode(raw)
+            isShowingSample = false
             errorMessage = nil
             try? FileManager.default.createDirectory(
                 at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true
@@ -46,8 +49,18 @@ final class PriceStore: ObservableObject {
             // L'utente ha chiuso la schermata durante l'aggiornamento: nessun errore da mostrare.
         } catch let error as URLError where error.code == .cancelled {
             // Come sopra, ma segnalato da URLSession.
+        } catch let error as FetchError {
+            if case .notFound = error, data == nil || isShowingSample {
+                errorMessage = nil  // il motore non ha ancora fatto il primo controllo: normale
+            } else {
+                errorMessage = error.localizedDescription
+            }
         } catch {
             errorMessage = error.localizedDescription
+        }
+        if data == nil {
+            data = .sample
+            isShowingSample = true
         }
     }
 }

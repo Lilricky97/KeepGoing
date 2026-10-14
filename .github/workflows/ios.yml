@@ -1,0 +1,61 @@
+name: App iPhone
+
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**"]
+  workflow_dispatch:
+
+jobs:
+  simulator:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Versione di Xcode
+        run: xcodebuild -version
+
+      - name: Compila per il simulatore
+        run: |
+          xcodebuild build \
+            -project ios/KeepGoing.xcodeproj \
+            -scheme KeepGoing \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1 || {
+              grep -E "error:" build.log | sort -u
+              tail -80 build.log
+              exit 1
+            }
+          echo "Avvisi del compilatore:"
+          grep -E "\.swift:[0-9]+:[0-9]+: warning:" build.log | sort -u || echo "nessuno"
+
+      - name: Avvia nel simulatore e fai gli screenshot
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          runtimes = json.load(sys.stdin)["devices"]
+          ios = sorted((k for k in runtimes if ".iOS-" in k), key=lambda k: [int(n) for n in k.split("iOS-")[1].split("-")])
+          print(next(d["udid"] for d in runtimes[ios[-1]] if d["name"].startswith("iPhone")))
+          ')
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/KeepGoing.app
+          xcrun simctl launch "$UDID" com.lilricky97.keepgoing
+          sleep 20
+          mkdir -p screenshots
+          xcrun simctl io "$UDID" screenshot screenshots/1-lista.png
+          xcrun simctl push "$UDID" com.lilricky97.keepgoing ios/notifica-di-prova.apns
+          sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/2-dopo-notifica.png
+          xcrun simctl spawn "$UDID" launchctl list | grep -q keepgoing || { echo "L'app si è chiusa da sola (crash?)"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: ignore
