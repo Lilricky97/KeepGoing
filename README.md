@@ -4,7 +4,7 @@
 
 Scegli la tratta e il periodo (es. Milano → Barcellona a dicembre). KeepGoing cerca il volo più economico ogni 3 ore e, se il prezzo scende, sale o va sotto la cifra che hai scelto, ti manda una notifica dall'app **KeepGoing** direttamente sullo schermo, anche quando l'app è chiusa.
 
-> Versione **0.1.0**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
+> Versione **0.1.1**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -56,8 +56,21 @@ Il prezzo è sceso da 95 € a 84 € (-12%).
 | Account GitHub | gratis | fa girare il motore ogni 3 ore e salva lo storico |
 | Account [Travelpayouts](https://www.travelpayouts.com) | gratis | fonte dei prezzi dei voli |
 | Mac con Xcode | gratis (Mac App Store) | installare l'app sull'iPhone |
-| [Apple Developer Program](https://developer.apple.com/programs/) | 99 €/anno | obbligatorio per le notifiche push (e per non dover reinstallare l'app ogni 7 giorni) |
+| [Apple Developer Program](https://developer.apple.com/programs/) | 99 €/anno | obbligatorio per le notifiche push sull'iPhone vero (e per non dover reinstallare l'app ogni 7 giorni); non serve per il simulatore |
 | iPhone con iOS 17 o successivo | | |
+
+---
+
+## Prova subito nel simulatore
+
+Per vedere l'app non servono né l'iPhone né l'account sviluppatore, basta un Mac con Xcode:
+
+1. Scarica il progetto (**Code** → **Download ZIP**) e apri `ios/KeepGoing.xcodeproj` con Xcode.
+2. In alto, accanto a **KeepGoing**, scegli un simulatore (es. **iPhone 16**) e premi ▶︎ (oppure ⌘R).
+3. L'app si apre con due **voli di esempio**: toccane uno per vedere il grafico e i dettagli.
+4. Per vedere come arriva una notifica: nell'app tocca **Attiva** → **Consenti**, poi trascina il file `ios/notifica-di-prova.apns` dal Finder sulla finestra del simulatore. Toccando la notifica si apre il volo.
+
+I voli di esempio restano finché il motore su GitHub non ha fatto il primo controllo dei prezzi; da lì in poi l'app mostra i tuoi.
 
 ---
 
@@ -194,7 +207,8 @@ keepgoing/                     ← il motore Python
   tracker.py                   ←   quando un cambio di prezzo merita una notifica
 ios/KeepGoing.xcodeproj        ← l'app iPhone (SwiftUI)
 ios/KeepGoing/                 ←   codice dell'app
-.github/workflows/             ← controllo ogni 3 ore + test automatici
+ios/notifica-di-prova.apns     ←   notifica da trascinare sul simulatore
+.github/workflows/             ← controllo ogni 3 ore, test, compilazione dell'app
 tests/                         ← test del motore
 docs/versions/                 ← il README di ogni versione
 obsidian/                      ← nota Obsidian con tutti i README

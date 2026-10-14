@@ -2,6 +2,14 @@
 
 Tutte le versioni di KeepGoing. Il README completo di ogni versione è in `docs/versions/`.
 
+## v0.1.1 — 2026-10-14
+
+L'app si prova nel simulatore di Xcode, senza iPhone né account sviluppatore.
+
+- Voli di esempio nell'app finché il motore non ha fatto il primo controllo dei prezzi.
+- Nel simulatore non serve firmare l'app; le notifiche si provano trascinando `ios/notifica-di-prova.apns` sulla finestra.
+- L'app viene compilata e avviata nel simulatore su un Mac di GitHub a ogni modifica, con screenshot.
+
 ## v0.1.0 — 2026-10-14
 
 Prima versione: motore che controlla i prezzi ogni 3 ore e app iPhone che riceve le notifiche push.
