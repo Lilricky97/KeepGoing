@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────
+#  KeepGoing — quali voli monitorare
+#  Modifica questo file (anche dal sito di GitHub) e salva:
+#  al prossimo controllo automatico verrà usato.
+# ─────────────────────────────────────────────────────────────
+
+[settings]
+# Da dove prendere i prezzi:
+#   "travelpayouts" → gratis, accetta un mese intero (serve TRAVELPAYOUTS_TOKEN)
+#   "serpapi"       → Google Flights in tempo reale, solo date esatte (serve SERPAPI_KEY)
+#   "demo"          → prezzi finti, per provare l'app senza chiavi
+provider = "travelpayouts"
+currency = "EUR"
+
+# "drops" = avvisami solo quando scende · "both" = anche quando sale
+notify_on = "both"
+
+# Notifica solo se il prezzo cambia di almeno 5 € E almeno del 3%
+# rispetto all'ultima notifica (evita avvisi per pochi centesimi).
+min_change_abs = 5
+min_change_pct = 3
+
+
+# Ogni blocco [[watch]] è un volo da tenere d'occhio.
+# Codici IATA: città (MIL = tutti gli aeroporti di Milano, ROM, LON, PAR…)
+# oppure aeroporto (MXP, LIN, BGY, FCO…).
+[[watch]]
+name = "Milano → Barcellona"
+origin = "MIL"
+destination = "BCN"
+depart = "2026-12"        # tutto il mese (YYYY-MM) oppure un giorno preciso (YYYY-MM-DD)
+return = "2026-12"        # togli questa riga per solo andata
+direct_only = false       # true = solo voli diretti
+target_price = 80         # facoltativo: notifica speciale quando scende sotto questa cifra
+
+# Esempio di un secondo volo, solo andata in un giorno preciso:
+# [[watch]]
+# name = "Roma → Londra"
+# origin = "ROM"
+# destination = "LON"
+# depart = "2027-02-14"
+# target_price = 50

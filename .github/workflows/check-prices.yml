@@ -1,0 +1,53 @@
+name: Controllo prezzi voli
+
+on:
+  schedule:
+    - cron: "17 */3 * * *" # ogni 3 ore (orario UTC)
+  workflow_dispatch: # pulsante "Run workflow" per un controllo immediato
+
+permissions:
+  contents: write # serve per salvare data/prices.json nel repository
+
+concurrency:
+  group: check-prices
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Installa le dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Controlla i prezzi
+        env:
+          TRAVELPAYOUTS_TOKEN: ${{ secrets.TRAVELPAYOUTS_TOKEN }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          APNS_KEY: ${{ secrets.APNS_KEY }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          APNS_TEAM_ID: ${{ secrets.APNS_TEAM_ID }}
+          APNS_BUNDLE_ID: ${{ secrets.APNS_BUNDLE_ID }}
+          APNS_DEVICE_TOKENS: ${{ secrets.APNS_DEVICE_TOKENS }}
+          APNS_ENVIRONMENT: ${{ secrets.APNS_ENVIRONMENT }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python -m keepgoing check --skip-if-unconfigured
+
+      - name: Salva lo storico prezzi
+        run: |
+          [ -f data/prices.json ] || exit 0
+          git config user.name "keepgoing-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/prices.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Aggiorna storico prezzi [skip ci]"
+          git pull --rebase --quiet
+          git push

@@ -1,0 +1,17 @@
+# Segreti locali: mai su GitHub
+.env
+*.p8
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/*.tmp
+
+# Xcode
+ios/build/
+ios/DerivedData/
+xcuserdata/
+*.xcuserstate
+.DS_Store

@@ -1,0 +1,4 @@
+# Servono solo per le notifiche push all'app iPhone (APNs usa HTTP/2).
+# Il resto di KeepGoing usa solo la libreria standard di Python.
+httpx[http2]>=0.27
+PyJWT[crypto]>=2.8
