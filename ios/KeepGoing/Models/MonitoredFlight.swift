@@ -69,7 +69,7 @@ extension MonitoredFlight {
         let bcn = Place(code: "BCN", name: "Barcellona", type: "city", countryName: "Spagna")
         let rom = Place(code: "ROM", name: "Roma", type: "city", countryName: "Italia")
         let lon = Place(code: "LON", name: "Londra", type: "city", countryName: "Regno Unito")
-        let start = Date(timeIntervalSince1970: 1_760_400_000)  // 14 ottobre 2025, solo per i grafici
+        let start = Date.now.addingTimeInterval(-3 * 86_400)  // tre giorni fa: controlli recenti, grafici realistici
 
         var first = MonitoredFlight(
             query: SearchQuery(origin: mil, destination: bcn, depart: "2026-12-10", returnDate: "2026-12-17", directOnly: false),
