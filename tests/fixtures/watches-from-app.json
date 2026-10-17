@@ -1,0 +1,25 @@
+{
+  "version" : 1,
+  "watches" : [
+    {
+      "added_at" : "2026-10-17T08:08:52Z",
+      "depart" : "2027-03",
+      "destination" : "JFK",
+      "direct_only" : true,
+      "id" : "fco-jfk-2027-03",
+      "name" : "Roma → New York",
+      "origin" : "FCO",
+      "target_price" : 300
+    },
+    {
+      "added_at" : "2026-10-17T08:08:52Z",
+      "depart" : "2026-12-05",
+      "destination" : "BCN",
+      "direct_only" : false,
+      "id" : "mil-bcn-2026-12-05-2026-12-12",
+      "name" : "Milano → Barcellona",
+      "origin" : "MIL",
+      "return" : "2026-12-12"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--config", default="config.toml", help="file di configurazione (default: config.toml)")
     parser.add_argument("--data", default="data/prices.json", help="storico prezzi (default: data/prices.json)")
+    parser.add_argument("--watches", default="watches.json", help="voli aggiunti dall'app (default: watches.json)")
     parser.add_argument("--version", action="version", version=f"KeepGoing {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -57,7 +58,12 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _check(args) -> int:
-    config = load_config(args.config)
+    config = load_config(args.config, args.watches)
+    for warning in config.warnings:
+        print(f"Attenzione: {warning}")
+    if not config.watches:
+        print("Nessun volo da monitorare: aggiungine uno dall'app KeepGoing (scheda Cerca) o in config.toml.")
+        return 0  # niente da salvare: evita commit inutili dello storico
     store = Store(args.data)
     notifiers = [ConsoleNotifier()] if args.dry_run else build_notifiers()
     try:

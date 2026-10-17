@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────
-#  KeepGoing — quali voli monitorare
-#  Modifica questo file (anche dal sito di GitHub) e salva:
-#  al prossimo controllo automatico verrà usato.
+#  KeepGoing — impostazioni
+#  Fonte dei prezzi e soglie delle notifiche.
+#  I voli da monitorare si aggiungono dall'app (vedi in fondo).
 # ─────────────────────────────────────────────────────────────
 
 [settings]
@@ -21,22 +21,16 @@ min_change_abs = 5
 min_change_pct = 3
 
 
-# Ogni blocco [[watch]] è un volo da tenere d'occhio.
+# I voli da monitorare si aggiungono dall'app KeepGoing (scheda "Cerca" → "Monitora"):
+# l'app li salva in watches.json. Puoi anche scriverli qui, un blocco [[watch]] per volo.
 # Codici IATA: città (MIL = tutti gli aeroporti di Milano, ROM, LON, PAR…)
 # oppure aeroporto (MXP, LIN, BGY, FCO…).
-[[watch]]
-name = "Milano → Barcellona"
-origin = "MIL"
-destination = "BCN"
-depart = "2026-12"        # tutto il mese (YYYY-MM) oppure un giorno preciso (YYYY-MM-DD)
-return = "2026-12"        # togli questa riga per solo andata
-direct_only = false       # true = solo voli diretti
-target_price = 80         # facoltativo: notifica speciale quando scende sotto questa cifra
-
-# Esempio di un secondo volo, solo andata in un giorno preciso:
+#
 # [[watch]]
-# name = "Roma → Londra"
-# origin = "ROM"
-# destination = "LON"
-# depart = "2027-02-14"
-# target_price = 50
+# name = "Milano → Barcellona"
+# origin = "MIL"
+# destination = "BCN"
+# depart = "2026-12"        # tutto il mese (YYYY-MM) oppure un giorno preciso (YYYY-MM-DD)
+# return = "2026-12"        # togli questa riga per solo andata
+# direct_only = false       # true = solo voli diretti
+# target_price = 80         # facoltativo: notifica speciale quando scende sotto questa cifra

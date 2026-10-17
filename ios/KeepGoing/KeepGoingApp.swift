@@ -8,7 +8,7 @@ struct KeepGoingApp: App {
 
     var body: some Scene {
         WindowGroup {
-            FlightListView()
+            RootView()
                 .environmentObject(store)
                 .environmentObject(notifications)
         }

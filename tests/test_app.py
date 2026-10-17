@@ -94,13 +94,37 @@ class CliTest(unittest.TestCase):
                 '[settings]\nprovider = "demo"\n\n[[watch]]\norigin = "MIL"\ndestination = "BCN"\ndepart = "2099-12"\n'
             )
             data = Path(tmp) / "prices.json"
+            files = ["--config", str(config), "--data", str(data), "--watches", str(Path(tmp) / "watches.json")]
             out = StringIO()
             with redirect_stdout(out):
-                self.assertEqual(main(["--config", str(config), "--data", str(data), "check"]), 0)
-                self.assertEqual(main(["--config", str(config), "--data", str(data), "history"]), 0)
+                self.assertEqual(main([*files, "check"]), 0)
+                self.assertEqual(main([*files, "history"]), 0)
             self.assertIn("Monitoraggio avviato", out.getvalue())
             self.assertIn("mil-bcn-2099-12", out.getvalue())
             self.assertTrue(data.is_file())
+
+    def test_check_uses_flights_added_from_the_app(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / "config.toml"
+            config.write_text('[settings]\nprovider = "demo"\n')
+            watches = Path(tmp) / "watches.json"
+            data = Path(tmp) / "prices.json"
+            files = ["--config", str(config), "--data", str(data), "--watches", str(watches)]
+            out = StringIO()
+            with redirect_stdout(out):
+                self.assertEqual(main([*files, "check"]), 0)  # nessun volo: non è un errore
+                self.assertFalse(data.exists())  # e non salva uno storico vuoto
+                watches.write_text(json.dumps({"version": 1, "watches": [
+                    {"id": "fco-jfk-2099-03", "name": "Roma → New York", "origin": "FCO",
+                     "destination": "JFK", "depart": "2099-03", "added_at": "2026-10-17T10:00:00Z"},
+                    {"origin": "XX", "destination": "JFK", "depart": "2099-03"},
+                ]}))
+                self.assertEqual(main([*files, "check"]), 0)
+            self.assertIn("Nessun volo da monitorare", out.getvalue())
+            self.assertIn("Attenzione: Volo dall'app ignorato", out.getvalue())
+            saved = json.loads(data.read_text())
+            self.assertEqual(saved["active"], ["fco-jfk-2099-03"])
+            self.assertEqual(saved["watches"]["fco-jfk-2099-03"]["watch"]["source"], "app")
 
     def test_bad_config_returns_error(self):
         out = StringIO()

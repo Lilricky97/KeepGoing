@@ -39,6 +39,54 @@ enum Format {
         return "\(months[parts[1] - 1]) \(parts[0])"
     }
 
+    /// "2026-12-10T09:30:00+01:00" → "gio 10 dic, 09:30" (ora locale dell'aeroporto)
+    static func dayTime(_ raw: String?) -> String? {
+        guard let raw, raw.count >= 10 else { return nil }
+        let c = Array(raw)
+        guard let year = Int(String(c[0..<4])), let month = Int(String(c[5..<7])), let day = Int(String(c[8..<10])),
+              let date = utcCalendar.date(from: DateComponents(year: year, month: month, day: day))
+        else { return tripDate(raw) }
+        let formatter = DateFormatter()
+        formatter.locale = italian
+        formatter.calendar = utcCalendar
+        formatter.timeZone = utcCalendar.timeZone
+        formatter.dateFormat = "EEE d MMM"
+        var out = formatter.string(from: date)
+        if c.count >= 16, c[10] == "T" || c[10] == " " {
+            out += ", " + String(c[11..<16])
+        }
+        return out
+    }
+
+    /// 130 → "2 h 10 min"
+    static func duration(_ minutes: Int?) -> String? {
+        guard let minutes, minutes > 0 else { return nil }
+        let hours = minutes / 60, rest = minutes % 60
+        if hours == 0 { return "\(rest) min" }
+        return rest == 0 ? "\(hours) h" : "\(hours) h \(rest) min"
+    }
+
+    /// Data scelta nel calendario → "2026-12-10" (giorno locale dell'utente).
+    static func isoDay(_ date: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
+    /// I prossimi `count` mesi a partire da quello di `date`, come "YYYY-MM".
+    static func upcomingMonths(from date: Date = .now, count: Int = 12, calendar: Calendar = .current) -> [String] {
+        (0..<count).compactMap { offset in
+            guard let month = calendar.date(byAdding: .month, value: offset, to: date) else { return nil }
+            let parts = calendar.dateComponents([.year, .month], from: month)
+            return String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
+        }
+    }
+
+    private static let utcCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .current
+        return calendar
+    }()
+
     static func stops(_ transfers: Int?) -> String? {
         switch transfers {
         case nil: return nil

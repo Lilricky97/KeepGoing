@@ -1,14 +1,15 @@
 import SwiftUI
 import UIKit
 
+/// Scheda "Impostazioni": notifiche e collegamenti (Travelpayouts per la ricerca, GitHub per il motore).
 struct SettingsView: View {
     @EnvironmentObject private var notifications: NotificationManager
-    @Environment(\.dismiss) private var dismiss
 
     @AppStorage(GitHubSource.Keys.owner) private var owner = GitHubSource.defaultOwner
     @AppStorage(GitHubSource.Keys.repo) private var repo = GitHubSource.defaultRepo
     @AppStorage(GitHubSource.Keys.branch) private var branch = ""
-    @State private var token = Keychain.read(GitHubSource.Keys.token) ?? ""
+    @State private var githubToken = Keychain.read(GitHubSource.Keys.token) ?? ""
+    @State private var travelpayoutsToken = Keychain.read(TravelpayoutsClient.tokenKey) ?? ""
     @State private var copied = false
 
     var body: some View {
@@ -19,33 +20,49 @@ struct SettingsView: View {
                     deviceTokenSection(deviceToken)
                 }
                 Section {
+                    SecureField("Token Travelpayouts", text: $travelpayoutsToken)
+                    status(travelpayoutsToken.isEmpty ? "Senza token la ricerca mostra prezzi di esempio" : "Ricerca con prezzi veri", ok: !travelpayoutsToken.isEmpty)
+                } header: {
+                    Text("Ricerca voli")
+                } footer: {
+                    Text("È gratis: registrati su travelpayouts.com, unisciti al programma Aviasales e copia il token API dal tuo profilo. È lo stesso token che usa il motore su GitHub.")
+                }
+                Section {
+                    SecureField("Token GitHub", text: $githubToken)
+                    status(githubToken.isEmpty ? "Senza token non puoi aggiungere voli" : "Puoi aggiungere e togliere voli", ok: !githubToken.isEmpty)
+                } header: {
+                    Text("GitHub")
+                } footer: {
+                    Text("Serve per salvare i voli che monitori. Su github.com: Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Scegli solo il repository \(repo) e il permesso Contents: Read and write.")
+                }
+                Section {
                     TextField("Utente GitHub", text: $owner)
                     TextField("Repository", text: $repo)
                     TextField("Branch (vuoto = predefinito)", text: $branch)
-                    SecureField("Token (solo se il repo è privato)", text: $token)
                 } header: {
-                    Text("Da dove leggere i prezzi")
-                } footer: {
-                    Text("Il repository su GitHub dove gira il motore di KeepGoing. Se è privato serve un token \"fine-grained\" con permesso Contents: Read-only.")
+                    Text("Repository del motore")
                 }
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
                 Section {
                     LabeledContent("Versione", value: Bundle.main.appVersion)
                 }
             }
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
             .navigationTitle("Impostazioni")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Fine") { dismiss() }
-                }
-            }
             .task { await notifications.refreshStatus() }
-            .onChange(of: token) { _, newValue in
-                Keychain.save(newValue.trimmingCharacters(in: .whitespacesAndNewlines), account: GitHubSource.Keys.token)
+            .onChange(of: githubToken) { _, value in
+                Keychain.save(value.trimmingCharacters(in: .whitespacesAndNewlines), account: GitHubSource.Keys.token)
+            }
+            .onChange(of: travelpayoutsToken) { _, value in
+                Keychain.save(value.trimmingCharacters(in: .whitespacesAndNewlines), account: TravelpayoutsClient.tokenKey)
             }
         }
+    }
+
+    private func status(_ text: String, ok: Bool) -> some View {
+        Label(text, systemImage: ok ? "checkmark.circle.fill" : "info.circle")
+            .font(.footnote)
+            .foregroundStyle(ok ? Color.green : Color.secondary)
     }
 
     private var notificationSection: some View {

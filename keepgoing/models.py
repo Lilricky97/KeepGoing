@@ -20,6 +20,7 @@ class Watch:
     direct_only: bool = False
     target_price: float | None = None
     provider: str | None = None  # se vuoto usa quello in [settings]
+    source: str = "config"  # "config" = config.toml, "app" = aggiunto dall'app (watches.json)
 
     @property
     def one_way(self) -> bool:

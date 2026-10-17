@@ -36,11 +36,12 @@ class Store:
             "return": watch.return_,
             "direct_only": watch.direct_only,
             "target_price": watch.target_price,
+            "source": watch.source,
         }
         return state
 
     def set_active(self, watch_ids: list[str]) -> None:
-        """Ordine dei voli presenti in config.toml (quelli rimossi restano nello storico)."""
+        """Voli monitorati adesso, in ordine (quelli rimossi restano nello storico)."""
         self.data["active"] = watch_ids
 
     def save(self) -> None:

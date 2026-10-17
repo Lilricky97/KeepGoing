@@ -1,7 +1,8 @@
-"""Lettura e validazione di config.toml."""
+"""Lettura e validazione di config.toml e di watches.json (i voli aggiunti dall'app)."""
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import tomllib
@@ -20,6 +21,7 @@ _WATCH_KEYS = {
     "id", "name", "origin", "destination", "depart", "return",
     "direct_only", "target_price", "provider",
 }
+_APP_WATCH_KEYS = _WATCH_KEYS | {"added_at"}
 _SETTINGS_KEYS = {
     "provider", "currency", "notify_on", "min_change_pct",
     "min_change_abs", "market", "history_limit",
@@ -57,9 +59,10 @@ class Settings:
 class Config:
     settings: Settings
     watches: list[Watch] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
-def load_config(path: str | Path) -> Config:
+def load_config(path: str | Path, watches_path: str | Path | None = "watches.json") -> Config:
     path = Path(path)
     try:
         with path.open("rb") as fh:
@@ -68,20 +71,47 @@ def load_config(path: str | Path) -> Config:
         raise ConfigError(f"File di configurazione non trovato: {path}") from None
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"{path} non è un TOML valido: {exc}") from None
-    return parse_config(raw)
+    return parse_config(raw, load_app_watches(watches_path) if watches_path else [])
 
 
-def parse_config(raw: dict) -> Config:
+def load_app_watches(path: str | Path) -> list[dict]:
+    """Voli aggiunti dall'app iPhone (watches.json, scritto dall'app tramite GitHub)."""
+    path = Path(path)
+    if not path.is_file():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ConfigError(f"{path} non è un JSON valido: {exc}") from None
+    watches = data.get("watches", []) if isinstance(data, dict) else None
+    if not isinstance(watches, list):
+        raise ConfigError(f"{path}: manca l'elenco 'watches'.")
+    return watches
+
+
+def parse_config(raw: dict, app_watches: list[dict] = ()) -> Config:
     settings = _parse_settings(raw.get("settings", {}))
-    watches = [_parse_watch(i, item) for i, item in enumerate(raw.get("watch", []), 1)]
-    if not watches:
-        raise ConfigError("Nessun volo da monitorare: aggiungi almeno un blocco [[watch]].")
+    watches = [_parse_watch(f"[[watch]] n.{i}", item) for i, item in enumerate(raw.get("watch", []), 1)]
     seen: set[str] = set()
     for watch in watches:
         if watch.id in seen:
             raise ConfigError(f"Due voli hanno lo stesso id '{watch.id}': aggiungi un campo id diverso.")
         seen.add(watch.id)
-    return Config(settings=settings, watches=watches)
+
+    # Un volo sbagliato aggiunto dall'app non deve fermare il controllo degli altri.
+    warnings = []
+    for i, item in enumerate(app_watches, 1):
+        try:
+            watch = _parse_watch(f"watches.json n.{i}", item, source="app")
+        except ConfigError as exc:
+            warnings.append(f"Volo dall'app ignorato: {exc}")
+            continue
+        if watch.id in seen:
+            warnings.append(f"Volo dall'app ignorato: '{watch.id}' è già monitorato.")
+            continue
+        seen.add(watch.id)
+        watches.append(watch)
+    return Config(settings=settings, watches=watches, warnings=warnings)
 
 
 def _parse_settings(raw: dict) -> Settings:
@@ -100,9 +130,10 @@ def _parse_settings(raw: dict) -> Settings:
     return Settings(**{**raw, "currency": settings.currency.upper()})
 
 
-def _parse_watch(index: int, raw: dict) -> Watch:
-    where = f"[[watch]] n.{index}"
-    _reject_unknown(raw, _WATCH_KEYS, where)
+def _parse_watch(where: str, raw: dict, source: str = "config") -> Watch:
+    if not isinstance(raw, dict):
+        raise ConfigError(f"{where}: formato non valido.")
+    _reject_unknown(raw, _APP_WATCH_KEYS if source == "app" else _WATCH_KEYS, where)
     for key in ("origin", "destination", "depart"):
         if not raw.get(key):
             raise ConfigError(f"{where}: manca il campo obbligatorio '{key}'.")
@@ -136,6 +167,7 @@ def _parse_watch(index: int, raw: dict) -> Watch:
         direct_only=bool(raw.get("direct_only", False)),
         target_price=float(target) if target is not None else None,
         provider=provider,
+        source=source,
     )
 
 

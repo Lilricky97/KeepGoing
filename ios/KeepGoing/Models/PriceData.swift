@@ -58,9 +58,10 @@ struct WatchInfo: Decodable {
     var returnDate: String?
     var directOnly: Bool?
     var targetPrice: Double?
+    var source: String?  // "app" = aggiunto dall'app (watches.json), altrimenti config.toml
 
     enum CodingKeys: String, CodingKey {
-        case name, origin, destination, depart
+        case name, origin, destination, depart, source
         case returnDate = "return"
         case directOnly = "direct_only"
         case targetPrice = "target_price"
@@ -97,33 +98,55 @@ struct PricePoint: Decodable, Identifiable, Equatable {
 /// Un volo monitorato, pronto da mostrare.
 struct Flight: Identifiable {
     let id: String
-    let state: WatchState
+    let info: WatchInfo?
+    let state: WatchState?  // nil = aggiunto dall'app, il motore non l'ha ancora controllato
     let isActive: Bool
 
-    var info: WatchInfo? { state.watch }
     var name: String { info?.name ?? id }
     var route: String { info.map { "\($0.origin) → \($0.destination)" } ?? "" }
-    var currency: String { state.last?.currency ?? "EUR" }
-    var currentPrice: Double? { state.last?.price ?? state.history.last?.price }
+    var isFromApp: Bool { info?.source == "app" }
+    var isPending: Bool { state == nil }
+    var history: [PricePoint] { state?.history ?? [] }
+    var lowest: Double? { state?.lowest }
+    var last: LastOffer? { state?.last }
+    var currency: String { last?.currency ?? "EUR" }
+    var currentPrice: Double? { last?.price ?? history.last?.price }
 
     /// Differenza rispetto al controllo precedente (negativa = è sceso).
     var lastChange: Double? {
-        let points = state.history
+        let points = history
         guard points.count >= 2 else { return nil }
         return points[points.count - 1].price - points[points.count - 2].price
     }
-}
 
-extension PriceData {
-    /// Voli in config.toml prima (nel loro ordine), poi quelli rimossi.
-    var flights: [Flight] {
-        let order = active ?? watches.keys.sorted()
-        let activeSet = Set(order)
-        let current = order.compactMap { id in watches[id].map { Flight(id: id, state: $0, isActive: true) } }
-        let archived = watches.keys.filter { !activeSet.contains($0) }.sorted().compactMap { id in
-            watches[id].map { Flight(id: id, state: $0, isActive: false) }
+    /// Unisce lo storico del motore (prices.json) con i voli aggiunti dall'app (watches.json).
+    /// `appWatches` nil = watches.json non ancora letto.
+    static func combine(prices: PriceData?, appWatches: [AppWatch]?) -> [Flight] {
+        let states = prices?.watches ?? [:]
+        var appByID: [String: AppWatch] = [:]
+        for watch in appWatches ?? [] where appByID[watch.id] == nil {
+            appByID[watch.id] = watch
         }
-        return current + archived
+        var result: [Flight] = []
+        var seen = Set<String>()
+        func add(_ id: String, isActive: Bool) {
+            guard seen.insert(id).inserted else { return }
+            let info = appByID[id]?.info ?? states[id]?.watch
+            result.append(Flight(id: id, info: info, state: states[id], isActive: isActive))
+        }
+
+        for id in prices?.active ?? states.keys.sorted() {
+            // Tolto dall'app: sparisce subito, anche se il motore non è ancora ripassato.
+            if states[id]?.watch?.source == "app", appWatches != nil, appByID[id] == nil { continue }
+            add(id, isActive: true)
+        }
+        for watch in appWatches ?? [] {
+            add(watch.id, isActive: true)  // appena aggiunti, in attesa del primo controllo
+        }
+        for id in states.keys.sorted() where states[id]?.watch?.source != "app" {
+            add(id, isActive: false)  // tolti da config.toml: resta lo storico
+        }
+        return result
     }
 }
 

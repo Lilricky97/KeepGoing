@@ -44,14 +44,16 @@ jobs:
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/KeepGoing.app
-          xcrun simctl launch "$UDID" com.lilricky97.keepgoing
-          sleep 20
           mkdir -p screenshots
-          xcrun simctl io "$UDID" screenshot screenshots/1-lista.png
-          xcrun simctl push "$UDID" com.lilricky97.keepgoing ios/notifica-di-prova.apns
-          sleep 5
-          xcrun simctl io "$UDID" screenshot screenshots/2-dopo-notifica.png
-          xcrun simctl spawn "$UDID" launchctl list | grep -q keepgoing || { echo "L'app si è chiusa da sola (crash?)"; exit 1; }
+          # Una schermata per volta (vedi RootView.swift, solo in Debug)
+          for screen in search results flights detail settings; do
+            xcrun simctl terminate "$UDID" com.lilricky97.keepgoing 2>/dev/null || true
+            xcrun simctl launch "$UDID" com.lilricky97.keepgoing -kgScreen "$screen"
+            sleep 12
+            xcrun simctl io "$UDID" screenshot "screenshots/$screen.png"
+          done
+          xcrun simctl spawn "$UDID" launchctl list > processes.txt
+          grep -q keepgoing processes.txt || { echo "L'app si è chiusa da sola (crash?)"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         if: always()

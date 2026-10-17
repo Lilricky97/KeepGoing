@@ -4,6 +4,10 @@ import SwiftUI
 struct FlightDetailView: View {
     let watchID: String
     @EnvironmentObject private var store: PriceStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmRemove = false
+    @State private var removing = false
+    @State private var removeError: String?
 
     var body: some View {
         Group {
@@ -21,14 +25,24 @@ struct FlightDetailView: View {
             Section {
                 PriceHeader(flight: flight)
             }
-            if flight.state.history.count >= 2 {
+            if flight.isPending {
+                Section {
+                    Label(
+                        "Il motore su GitHub lo controlla entro pochi minuti: poi qui vedrai il prezzo e riceverai la prima notifica.",
+                        systemImage: "clock"
+                    )
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+            }
+            if flight.history.count >= 2 {
                 Section("Andamento del prezzo") {
                     PriceChart(flight: flight)
                         .frame(height: 220)
                         .padding(.vertical, 8)
                 }
             }
-            if let offer = flight.state.last {
+            if let offer = flight.last {
                 Section("Offerta migliore") {
                     if let date = Format.tripDate(offer.departureAt) {
                         LabeledContent("Andata", value: date)
@@ -72,9 +86,45 @@ struct FlightDetailView: View {
                     }
                 }
             }
+            if flight.isFromApp && flight.isActive {
+                Section {
+                    Button(role: .destructive) {
+                        confirmRemove = true
+                    } label: {
+                        if removing {
+                            ProgressView()
+                        } else {
+                            Label("Smetti di monitorare", systemImage: "bell.slash")
+                        }
+                    }
+                    .disabled(removing)
+                } footer: {
+                    if let removeError {
+                        Text(removeError).foregroundStyle(.red)
+                    }
+                }
+            }
         }
         .navigationTitle(flight.name)
         .refreshable { await store.refresh() }
+        .confirmationDialog("Smettere di monitorare \(flight.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
+            Button("Smetti di monitorare", role: .destructive) {
+                Task { await remove(flight) }
+            }
+        } message: {
+            Text("Non riceverai più notifiche per questo volo.")
+        }
+    }
+
+    private func remove(_ flight: Flight) async {
+        removing = true
+        defer { removing = false }
+        do {
+            try await store.remove(id: flight.id)
+            dismiss()
+        } catch {
+            removeError = PriceStore.message(for: error)
+        }
     }
 }
 
@@ -95,7 +145,7 @@ private struct PriceHeader: View {
                 if let change = flight.lastChange, change != 0 {
                     ChangeBadge(change: change, currency: flight.currency)
                 }
-                if let lowest = flight.state.lowest {
+                if let lowest = flight.lowest {
                     Label("Minimo \(Format.price(lowest, currency: flight.currency))", systemImage: "trophy")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -115,7 +165,7 @@ private struct PriceChart: View {
     let flight: Flight
 
     var body: some View {
-        let points = flight.state.history
+        let points = flight.history
         let lowest = points.min { $0.price < $1.price }
         Chart {
             ForEach(points) { point in
