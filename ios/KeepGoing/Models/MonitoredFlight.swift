@@ -110,7 +110,7 @@ extension MonitoredFlight {
             stops: 0, durationMinutes: 175
         )
         second.insights = PriceInsights(lowestPrice: 64, level: "typical", typicalLow: 55, typicalHigh: 90)
-        second.lastCheck = start.addingTimeInterval(43_200)
+        second.lastCheck = start.addingTimeInterval(5 * 43_200)
         return [first, second]
     }()
 }
