@@ -2,6 +2,18 @@
 
 Tutte le versioni di KeepGoing. Il README completo di ogni versione è in `docs/versions/`.
 
+## v0.2.0 — 2026-10-17
+
+I voli si cercano e si aggiungono direttamente dall'app.
+
+- Nuova scheda **Cerca**: partenza e arrivo con suggerimenti mentre scrivi, mese intero o giorno preciso, andata e ritorno o solo andata, solo voli diretti.
+- Risultati dal più economico con logo della compagnia, orari, scali e durata; toccandone uno si apre l'offerta su Aviasales.
+- **Monitora questo volo** (con prezzo obiettivo facoltativo) salva il volo su GitHub e fa partire subito il primo controllo.
+- **I miei voli**: voli in attesa del primo controllo e possibilità di smettere di monitorarli.
+- Impostazioni come scheda, con i token Travelpayouts (ricerca) e GitHub (salvataggio dei voli).
+- Il motore legge i voli dell'app da `watches.json`; un volo sbagliato non blocca gli altri e senza voli non salva uno storico vuoto.
+- `config.toml` ora contiene solo le impostazioni (i voli a mano restano possibili).
+
 ## v0.1.1 — 2026-10-14
 
 L'app si prova nel simulatore di Xcode, senza iPhone né account sviluppatore.

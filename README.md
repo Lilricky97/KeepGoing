@@ -2,17 +2,20 @@
 
 **Ti avvisa sull'iPhone quando il prezzo di un volo cambia, soprattutto quando scende.**
 
-Scegli la tratta e il periodo (es. Milano → Barcellona a dicembre). KeepGoing cerca il volo più economico ogni 3 ore e, se il prezzo scende, sale o va sotto la cifra che hai scelto, ti manda una notifica dall'app **KeepGoing** direttamente sullo schermo, anche quando l'app è chiusa.
+Nell'app cerchi un volo (es. Milano → Barcellona a dicembre), vedi i prezzi e tocchi **Monitora**. Da quel momento KeepGoing controlla il volo più economico ogni 3 ore e, se il prezzo scende, sale o va sotto la cifra che hai scelto, ti manda una notifica dall'app **KeepGoing** direttamente sullo schermo, anche quando l'app è chiusa.
 
-> Versione **0.1.1**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
+> Versione **0.2.0**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## Come funziona
 
 ```
+ 📱 App KeepGoing: Cerca → scegli tratta e date → vedi i prezzi → Monitora
+                                            │ salva il volo in watches.json su GitHub
+                                            ▼
  ┌──────────────────────────── GitHub (gratis, sempre acceso) ────────────────────────────┐
- │  ogni 3 ore il "motore" (Python):                                                       │
+ │  subito, e poi ogni 3 ore, il "motore" (Python):                                        │
  │   1. chiede il volo più economico a Travelpayouts/Aviasales o Google Flights            │
  │   2. lo confronta con lo storico salvato in data/prices.json                            │
  │   3. se il prezzo è cambiato abbastanza → manda la notifica tramite Apple               │
@@ -33,7 +36,7 @@ Perché serve un "motore" su GitHub? iOS non permette a un'app di restare svegli
 | 👀 **Primo prezzo** | al primo controllo di un nuovo volo |
 | 🔻 **Ribasso** | il prezzo scende di almeno **5 € e del 3%** rispetto all'ultima notifica |
 | 🔺 **Rialzo** | il prezzo sale della stessa soglia (si può disattivare: `notify_on = "drops"`) |
-| 🎯 **Obiettivo** | il prezzo va sotto il tuo `target_price` (una volta sola, si riattiva se risale) |
+| 🎯 **Obiettivo** | il prezzo va sotto il prezzo obiettivo che hai scelto (una volta sola, si riattiva se risale) |
 | 🏆 **Minimo storico** | aggiunto al messaggio quando è il prezzo più basso mai visto |
 
 Il confronto è con il prezzo **dell'ultima notifica**, non dell'ultimo controllo: così anche un calo lento, pochi euro alla volta, prima o poi ti viene segnalato. Ribassi e obiettivi arrivano con priorità alta.
@@ -54,7 +57,7 @@ Il prezzo è sceso da 95 € a 84 € (-12%).
 | | Costo | A cosa serve |
 |---|---|---|
 | Account GitHub | gratis | fa girare il motore ogni 3 ore e salva lo storico |
-| Account [Travelpayouts](https://www.travelpayouts.com) | gratis | fonte dei prezzi dei voli |
+| Account [Travelpayouts](https://www.travelpayouts.com) | gratis | fonte dei prezzi dei voli (ricerca nell'app e controlli del motore) |
 | Mac con Xcode | gratis (Mac App Store) | installare l'app sull'iPhone |
 | [Apple Developer Program](https://developer.apple.com/programs/) | 99 €/anno | obbligatorio per le notifiche push sull'iPhone vero (e per non dover reinstallare l'app ogni 7 giorni); non serve per il simulatore |
 | iPhone con iOS 17 o successivo | | |
@@ -67,39 +70,33 @@ Per vedere l'app non servono né l'iPhone né l'account sviluppatore, basta un M
 
 1. Scarica il progetto (**Code** → **Download ZIP**) e apri `ios/KeepGoing.xcodeproj` con Xcode.
 2. In alto, accanto a **KeepGoing**, scegli un simulatore (es. **iPhone 16**) e premi ▶︎ (oppure ⌘R).
-3. L'app si apre con due **voli di esempio**: toccane uno per vedere il grafico e i dettagli.
-4. Per vedere come arriva una notifica: nell'app tocca **Attiva** → **Consenti**, poi trascina il file `ios/notifica-di-prova.apns` dal Finder sulla finestra del simulatore. Toccando la notifica si apre il volo.
+3. Nella scheda **Cerca** scegli partenza e arrivo (scrivi "mil", "barc"… e scegli dai suggerimenti), le date e tocca **Cerca voli**. Senza token Travelpayouts i prezzi sono di esempio.
+4. Nella scheda **I miei voli** ci sono due **voli di esempio**: toccane uno per vedere il grafico e i dettagli.
+5. Per vedere come arriva una notifica: nell'app tocca **Attiva** → **Consenti**, poi trascina il file `ios/notifica-di-prova.apns` dal Finder sulla finestra del simulatore. Toccando la notifica si apre il volo.
 
-I voli di esempio restano finché il motore su GitHub non ha fatto il primo controllo dei prezzi; da lì in poi l'app mostra i tuoi.
+I voli di esempio spariscono appena monitori il tuo primo volo.
 
 ---
 
 ## Installazione
 
-### 1. Scegli i voli da monitorare
-
-Apri [`config.toml`](config.toml) (puoi modificarlo anche dal sito di GitHub, con l'icona ✏️) e scrivi i voli:
-
-```toml
-[[watch]]
-name = "Milano → Barcellona"
-origin = "MIL"            # MIL = tutti gli aeroporti di Milano; oppure MXP, LIN, BGY…
-destination = "BCN"
-depart = "2026-12"        # tutto il mese (YYYY-MM) oppure un giorno preciso (YYYY-MM-DD)
-return = "2026-12"        # togli la riga per solo andata
-direct_only = false       # true = solo voli diretti
-target_price = 80         # facoltativo: avviso speciale sotto questa cifra
-```
-
-Puoi aggiungere quanti blocchi `[[watch]]` vuoi. In `[settings]` scegli la fonte dei prezzi, la valuta e le soglie di notifica.
-
-### 2. Collega la fonte dei prezzi (Travelpayouts)
+### 1. Collega la fonte dei prezzi (Travelpayouts)
 
 1. Registrati gratis su [travelpayouts.com](https://www.travelpayouts.com) e unisciti al programma **Aviasales**.
 2. Nel tuo profilo, nella sezione dedicata all'API, copia il **token API**.
 3. Su GitHub apri il repository → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
    - Name: `TRAVELPAYOUTS_TOKEN`
    - Secret: il token copiato
+4. Tienilo a portata di mano: lo incollerai anche nell'app (passo 3), per la ricerca.
+
+### 2. Crea il token GitHub per l'app
+
+L'app salva i voli che monitori nel file `watches.json` di questo repository, e per farlo le serve un token:
+
+1. Su github.com: foto profilo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+2. **Repository access**: *Only select repositories* → **KeepGoing**.
+3. **Permissions** → **Repository permissions** → **Contents**: *Read and write*.
+4. **Generate token** e copialo.
 
 ### 3. Installa l'app sull'iPhone
 
@@ -110,7 +107,8 @@ Puoi aggiungere quanti blocchi `[[watch]]` vuoi. In `[settings]` scegli la fonte
    - **Bundle Identifier**: è `com.lilricky97.keepgoing`. Se Xcode dice che non è disponibile, cambialo (es. `com.tuonome.keepgoing`) e usa lo stesso valore al passo 4.
 4. Collega l'iPhone al Mac, sceglilo in alto come destinazione e premi ▶︎.
    La prima volta l'iPhone ti chiederà di attivare la **Modalità sviluppatore** (Impostazioni → Privacy e sicurezza).
-5. Apri KeepGoing, tocca **Attiva** per le notifiche, poi ⚙️ → **Copia codice** (è il "codice di questo iPhone").
+5. Apri KeepGoing e tocca **Attiva** per le notifiche.
+6. Scheda **Impostazioni**: incolla il **token Travelpayouts** e il **token GitHub**, poi tocca **Copia codice** (è il "codice di questo iPhone", serve al passo 4).
 
 ### 4. Collega le notifiche push
 
@@ -118,7 +116,7 @@ Puoi aggiungere quanti blocchi `[[watch]]` vuoi. In `[settings]` scegli la fonte
    nome `KeepGoing push`, spunta **Apple Push Notifications service (APNs)** → **Continue** → **Register** → **Download**.
    Scarichi un file `AuthKey_XXXXXXXXXX.p8`: **si può scaricare una volta sola**, conservalo. Annota il **Key ID**.
 2. Il **Team ID** è in **Account** → **Membership details**.
-3. Aggiungi questi secrets su GitHub (come al passo 2):
+3. Aggiungi questi secrets su GitHub (come al passo 1):
 
 | Secret | Valore |
 |---|---|
@@ -129,10 +127,11 @@ Puoi aggiungere quanti blocchi `[[watch]]` vuoi. In `[settings]` scegli la fonte
 | `APNS_DEVICE_TOKENS` | il codice copiato dall'app; più iPhone/iPad separati da virgola |
 | `APNS_ENVIRONMENT` | `development` se l'app è installata da Xcode, `production` se da TestFlight/App Store |
 
-### 5. Prova
+### 5. Monitora il tuo primo volo
 
-Su GitHub: scheda **Actions** → **Controllo prezzi voli** → **Run workflow**.
-Dopo circa un minuto arriva sull'iPhone la prima notifica (👀) per ogni volo. Da lì in poi il controllo parte da solo ogni 3 ore.
+Nell'app: scheda **Cerca** → scegli tratta e date → **Cerca voli** → **Monitora questo volo** (puoi aggiungere un prezzo obiettivo) → **Monitora**.
+Il volo compare in **I miei voli** "in attesa del primo controllo": il salvataggio fa partire subito il motore su GitHub e dopo un paio di minuti arriva la prima notifica (👀). Da lì in poi il controllo parte da solo ogni 3 ore.
+Per smettere di monitorare un volo, scorrilo verso sinistra in **I miei voli**.
 
 Se qualcosa non va, apri l'esecuzione in **Actions**: il log spiega in italiano cosa manca (es. «token del dispositivo errato o APNS_ENVIRONMENT sbagliato»).
 
@@ -140,12 +139,14 @@ Se qualcosa non va, apri l'esecuzione in **Actions**: il log spiega in italiano 
 
 ## L'app
 
-- **Lista dei voli**: prezzo attuale, variazione dall'ultimo controllo, minimo storico.
+- **Cerca**: partenza e arrivo con suggerimenti mentre scrivi (città o singolo aeroporto), mese intero o giorno preciso, andata e ritorno o solo andata, solo voli diretti. I risultati sono ordinati dal più economico, con compagnia, orari, scali e durata; toccandone uno si apre l'offerta su Aviasales. **Monitora questo volo** lo aggiunge ai tuoi voli, con un prezzo obiettivo facoltativo.
+- **I miei voli**: prezzo attuale, variazione dall'ultimo controllo, minimo storico; scorri a sinistra per smettere di monitorare.
 - **Dettaglio**: grafico dell'andamento con minimo e obiettivo, dettagli dell'offerta migliore (date, scali, volo, fonte) e il pulsante **Apri l'offerta**.
 - **Notifiche**: arrivano anche ad app chiusa; toccandole si apre direttamente il volo.
-- **Impostazioni** (⚙️): stato delle notifiche, codice dell'iPhone da copiare, repository da cui leggere i dati.
+- **Impostazioni**: notifiche, codice dell'iPhone da copiare, token Travelpayouts e GitHub, repository del motore.
 
-L'app legge `data/prices.json` da GitHub. Se il repository è **privato**, crea un token su GitHub (**Settings** → **Developer settings** → **Fine-grained tokens**, solo questo repository, permesso **Contents: Read-only**) e incollalo nelle impostazioni dell'app: resta salvato nel Portachiavi dell'iPhone.
+L'app legge lo storico (`data/prices.json`) e i voli monitorati (`watches.json`) da GitHub; i token restano salvati nel Portachiavi dell'iPhone.
+I voli si possono scrivere anche a mano in `config.toml` (blocchi `[[watch]]`, c'è un esempio nel file): quelli non si tolgono dall'app.
 
 ---
 
@@ -192,14 +193,15 @@ Oltre all'app, il motore può scrivere anche su Telegram (`TELEGRAM_BOT_TOKEN`, 
 - **Orari**: GitHub può ritardare i controlli programmati di qualche minuto, a volte di più.
 - **Repository pubblico inattivo**: GitHub sospende i workflow programmati dopo 60 giorni senza attività. Se succede, riattivalo dalla scheda **Actions**.
 - **Branch**: i controlli programmati girano sul branch predefinito del repository, ed è lì che viene salvato lo storico.
-- **Aggiungere voli**: per ora si fa da `config.toml`, non ancora dall'app.
+- **Ricerca nell'app**: usa gli stessi prezzi del motore (Travelpayouts, ultime 48 ore); per rotte poco cercate può non trovare risultati, ma puoi monitorarle lo stesso.
 
 ---
 
 ## Struttura del progetto
 
 ```
-config.toml                    ← i voli da monitorare
+config.toml                    ← impostazioni del motore (e voli scritti a mano)
+watches.json                   ← voli aggiunti dall'app (lo crea l'app)
 data/prices.json               ← storico prezzi (scritto dal motore, letto dall'app)
 keepgoing/                     ← il motore Python
   providers/                   ←   fonti dei prezzi (travelpayouts, serpapi, demo)
