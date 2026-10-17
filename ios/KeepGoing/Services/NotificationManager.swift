@@ -1,60 +1,35 @@
 import UIKit
 import UserNotifications
 
-/// Permesso per le notifiche, token del dispositivo e apertura del volo toccato in una notifica.
+/// Permesso per le notifiche, invio delle notifiche e apertura del volo toccato in una notifica.
 @MainActor
 final class NotificationManager: ObservableObject {
     static let shared = NotificationManager()
 
     @Published private(set) var authorization: UNAuthorizationStatus = .notDetermined
-    @Published private(set) var deviceToken: String?
-    @Published private(set) var registrationError: String?
     /// Volo da aprire dopo il tocco su una notifica.
     @Published var pendingWatchID: String?
-
-    private let tokenKey = "apns.deviceToken"
-
-    /// Nel simulatore le notifiche push vere non arrivano: si provano trascinando
-    /// il file notifica-di-prova.apns sulla finestra del simulatore.
-    static let isSimulator: Bool = {
-        #if targetEnvironment(simulator)
-        return true
-        #else
-        return false
-        #endif
-    }()
-
-    init() {
-        deviceToken = UserDefaults.standard.string(forKey: tokenKey)
-    }
 
     func refreshStatus() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         authorization = settings.authorizationStatus
-        if !Self.isSimulator, authorization == .authorized || authorization == .provisional {
-            // Apple consiglia di registrarsi a ogni avvio: il token può cambiare.
-            UIApplication.shared.registerForRemoteNotifications()
-        }
     }
 
     func requestPermission() async {
-        do {
-            _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-        } catch {
-            registrationError = error.localizedDescription
-        }
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
         await refreshStatus()
     }
 
-    func didRegister(deviceToken data: Data) {
-        let token = data.map { String(format: "%02x", $0) }.joined()
-        deviceToken = token
-        registrationError = nil
-        UserDefaults.standard.set(token, forKey: tokenKey)
-    }
-
-    func didFailToRegister(_ error: Error) {
-        registrationError = error.localizedDescription
+    /// Notifica generata dall'app stessa: niente server e niente chiavi Apple.
+    func post(_ event: PriceEvent) async {
+        let content = UNMutableNotificationContent()
+        content.title = event.title
+        content.body = event.body
+        content.sound = .default
+        content.threadIdentifier = event.flight.id  // raggruppa le notifiche dello stesso volo
+        content.userInfo = ["watch_id": event.flight.id]
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        try? await UNUserNotificationCenter.current().add(request)
     }
 
     func open(watchID: String) {

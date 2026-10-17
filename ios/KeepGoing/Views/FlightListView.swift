@@ -2,13 +2,11 @@ import SwiftUI
 
 /// Scheda "I miei voli": i voli monitorati con prezzo attuale e variazione.
 struct FlightListView: View {
-    var onSearch: () -> Void = {}
+    var onSearch: () -> Void
 
-    @EnvironmentObject private var store: PriceStore
+    @EnvironmentObject private var store: MonitorStore
     @EnvironmentObject private var notifications: NotificationManager
-    @Environment(\.scenePhase) private var scenePhase
     @State private var path: [String] = []
-    @State private var actionError: String?
 
     init(onSearch: @escaping () -> Void = {}) {
         self.onSearch = onSearch
@@ -17,59 +15,44 @@ struct FlightListView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                if notifications.authorization == .notDetermined {
+                if notifications.authorization == .notDetermined && !store.flights.isEmpty {
                     Section { NotificationPrompt() }
                 }
-                if store.isShowingSample {
+                if notifications.authorization == .denied {
                     Section {
-                        Label(
-                            "Questi sono voli di esempio: cerca un volo nella scheda Cerca e tocca \"Monitora\" per aggiungere i tuoi.",
-                            systemImage: "info.circle.fill"
-                        )
-                        .font(.subheadline)
-                        .foregroundStyle(.blue)
+                        Label("Le notifiche sono disattivate: riattivale nelle Impostazioni di iOS per ricevere gli avvisi.", systemImage: "bell.slash.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(.orange)
                     }
                 }
-                if let error = store.errorMessage {
+                if let error = store.lastError {
                     Section {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
                             .font(.subheadline)
                     }
                 }
-                let flights = store.flights
-                let active = flights.filter(\.isActive)
-                let archived = flights.filter { !$0.isActive }
-                if !active.isEmpty {
+                if !store.flights.isEmpty {
                     Section {
-                        ForEach(active) { flight in
-                            NavigationLink(value: flight.id) { FlightRow(flight: flight) }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    if flight.isFromApp {
-                                        Button(role: .destructive) {
-                                            Task { await remove(flight) }
-                                        } label: {
-                                            Label("Non monitorare", systemImage: "bell.slash")
-                                        }
-                                    }
+                        ForEach(store.flights) { flight in
+                            NavigationLink(value: flight.id) {
+                                FlightRow(flight: flight, isChecking: store.checking.contains(flight.id))
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    store.remove(id: flight.id)
+                                } label: {
+                                    Label("Non monitorare", systemImage: "bell.slash")
                                 }
+                            }
                         }
                     } footer: {
-                        if let updated = store.updatedAt {
-                            Text("Ultimo controllo \(Format.relative(updated)). Scorri un volo verso sinistra per smettere di monitorarlo.")
-                        }
-                    }
-                }
-                if !archived.isEmpty {
-                    Section("Non più monitorati") {
-                        ForEach(archived) { flight in
-                            NavigationLink(value: flight.id) { FlightRow(flight: flight) }
-                        }
+                        Text("Ricontrollo i prezzi circa ogni \(store.checkIntervalHours) ore, anche ad app chiusa (iOS decide il momento esatto). Trascina in giù per controllare subito; scorri un volo a sinistra per toglierlo.")
                     }
                 }
             }
             .overlay {
-                if store.flights.isEmpty && !store.isLoading {
+                if store.flights.isEmpty {
                     ContentUnavailableView {
                         Label("Nessun volo monitorato", systemImage: "airplane.departure")
                     } description: {
@@ -82,31 +65,13 @@ struct FlightListView: View {
             }
             .navigationTitle("I miei voli")
             .navigationDestination(for: String.self) { id in
-                FlightDetailView(watchID: id)
+                FlightDetailView(flightID: id)
             }
-            .refreshable { await store.refresh() }
-            .alert(
-                "Operazione non riuscita",
-                isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })
-            ) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(actionError ?? "")
-            }
+            .refreshable { await store.checkDue(force: true) }
         }
-        .task {
-            openPendingFlight()  // app aperta toccando una notifica
-            await store.refreshIfStale()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                Task { await store.refreshIfStale() }
-            }
-        }
+        .task { openPendingFlight() }  // app aperta toccando una notifica
         .onChange(of: notifications.pendingWatchID) { _, id in
-            guard id != nil else { return }
-            openPendingFlight()
-            Task { await store.refresh() }
+            if id != nil { openPendingFlight() }
         }
     }
 
@@ -115,47 +80,38 @@ struct FlightListView: View {
         path = [id]
         notifications.pendingWatchID = nil
     }
-
-    private func remove(_ flight: Flight) async {
-        do {
-            try await store.remove(id: flight.id)
-        } catch {
-            actionError = PriceStore.message(for: error)
-        }
-    }
 }
 
 struct FlightRow: View {
-    let flight: Flight
+    let flight: MonitoredFlight
+    var isChecking = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(flight.name)
                     .font(.headline)
-                if let info = flight.info {
-                    Text(subtitle(info))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                if flight.isPending {
-                    Label("In attesa del primo controllo", systemImage: "clock")
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if flight.isExpired() {
+                    Label("Partito: non lo controllo più", systemImage: "airplane.circle")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                } else if let lowest = flight.lowest {
-                    Text("Minimo: \(Format.price(lowest, currency: flight.currency))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                } else if let level = flight.insights?.levelText {
+                    Text(level)
+                        .font(.caption.bold())
+                        .foregroundStyle(flight.insights?.level == "low" ? Color.green : flight.insights?.level == "high" ? Color.red : Color.orange)
                 }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
-                if let price = flight.currentPrice {
+                if isChecking {
+                    ProgressView()
+                } else if let price = flight.currentPrice {
                     Text(Format.price(price, currency: flight.currency))
                         .font(.title3.bold())
                         .monospacedDigit()
-                } else if flight.isPending {
-                    ProgressView()
                 }
                 if let change = flight.lastChange, change != 0 {
                     ChangeBadge(change: change, currency: flight.currency)
@@ -165,10 +121,10 @@ struct FlightRow: View {
         .padding(.vertical, 4)
     }
 
-    private func subtitle(_ info: WatchInfo) -> String {
-        var text = "\(info.origin) → \(info.destination) · \(Format.period(info.depart))"
-        if let ret = info.returnDate {
-            text += ret == info.depart ? " · andata e ritorno" : " – \(Format.period(ret))"
+    private var subtitle: String {
+        var text = "\(flight.route) · \(Format.period(flight.depart))"
+        if let back = flight.returnDate {
+            text += " – \(Format.period(back))"
         }
         return text
     }
@@ -207,6 +163,6 @@ struct NotificationPrompt: View {
 
 #Preview {
     FlightListView()
-        .environmentObject(PriceStore(preview: .sample))
+        .environmentObject(MonitorStore(preview: MonitoredFlight.samples))
         .environmentObject(NotificationManager.shared)
 }

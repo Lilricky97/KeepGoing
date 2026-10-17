@@ -1,72 +1,88 @@
 import SwiftUI
 import UIKit
 
-/// Scheda "Impostazioni": notifiche e collegamenti (Travelpayouts per la ricerca, GitHub per il motore).
+/// Scheda "Impostazioni": chiave di Google Voli, frequenza dei controlli e notifiche.
 struct SettingsView: View {
     @EnvironmentObject private var notifications: NotificationManager
+    @EnvironmentObject private var store: MonitorStore
 
-    @AppStorage(GitHubSource.Keys.owner) private var owner = GitHubSource.defaultOwner
-    @AppStorage(GitHubSource.Keys.repo) private var repo = GitHubSource.defaultRepo
-    @AppStorage(GitHubSource.Keys.branch) private var branch = ""
-    @State private var githubToken = Keychain.read(GitHubSource.Keys.token) ?? ""
-    @State private var travelpayoutsToken = Keychain.read(TravelpayoutsClient.tokenKey) ?? ""
-    @State private var copied = false
+    @State private var apiKey = Keychain.read(GoogleFlightsClient.keyAccount) ?? ""
+    @State private var searchesLeft: Int?
+    @State private var keyError: String?
 
     var body: some View {
         NavigationStack {
             Form {
+                googleSection
+                Section {
+                    Picker("Controlla ogni", selection: $store.checkIntervalHours) {
+                        Text("6 ore").tag(6)
+                        Text("12 ore").tag(12)
+                        Text("24 ore").tag(24)
+                    }
+                    Toggle("Avvisami anche quando sale", isOn: $store.notifyRises)
+                } header: {
+                    Text("Controlli dei prezzi")
+                } footer: {
+                    Text("Con i voli che monitori ora servono circa \(store.estimatedSearchesPerMonth) ricerche al mese (il piano gratuito ne ha 250). I controlli ad app chiusa li fa partire iOS quando vuole, di solito qualche volta al giorno; non partono se chiudi l'app scorrendola via.")
+                }
                 notificationSection
-                if let deviceToken = notifications.deviceToken {
-                    deviceTokenSection(deviceToken)
-                }
-                Section {
-                    SecureField("Token Travelpayouts", text: $travelpayoutsToken)
-                    status(travelpayoutsToken.isEmpty ? "Senza token la ricerca mostra prezzi di esempio" : "Ricerca con prezzi veri", ok: !travelpayoutsToken.isEmpty)
-                } header: {
-                    Text("Ricerca voli")
-                } footer: {
-                    Text("È gratis: registrati su travelpayouts.com, unisciti al programma Aviasales e copia il token API dal tuo profilo. È lo stesso token che usa il motore su GitHub.")
-                }
-                Section {
-                    SecureField("Token GitHub", text: $githubToken)
-                    status(githubToken.isEmpty ? "Senza token non puoi aggiungere voli" : "Puoi aggiungere e togliere voli", ok: !githubToken.isEmpty)
-                } header: {
-                    Text("GitHub")
-                } footer: {
-                    Text("Serve per salvare i voli che monitori. Su github.com: Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Scegli solo il repository \(repo) e il permesso Contents: Read and write.")
-                }
-                Section {
-                    TextField("Utente GitHub", text: $owner)
-                    TextField("Repository", text: $repo)
-                    TextField("Branch (vuoto = predefinito)", text: $branch)
-                } header: {
-                    Text("Repository del motore")
-                }
                 Section {
                     LabeledContent("Versione", value: Bundle.main.appVersion)
                 }
             }
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
             .navigationTitle("Impostazioni")
-            .task { await notifications.refreshStatus() }
-            .onChange(of: githubToken) { _, value in
-                Keychain.save(value.trimmingCharacters(in: .whitespacesAndNewlines), account: GitHubSource.Keys.token)
+            .task {
+                await notifications.refreshStatus()
+                await loadSearchesLeft()
             }
-            .onChange(of: travelpayoutsToken) { _, value in
-                Keychain.save(value.trimmingCharacters(in: .whitespacesAndNewlines), account: TravelpayoutsClient.tokenKey)
+            .onChange(of: apiKey) { _, value in
+                Keychain.save(value.trimmingCharacters(in: .whitespacesAndNewlines), account: GoogleFlightsClient.keyAccount)
+                searchesLeft = nil
+                keyError = nil
+            }
+            .onChange(of: store.checkIntervalHours) { _, _ in
+                BackgroundRefresh.schedule()
             }
         }
     }
 
-    private func status(_ text: String, ok: Bool) -> some View {
-        Label(text, systemImage: ok ? "checkmark.circle.fill" : "info.circle")
-            .font(.footnote)
-            .foregroundStyle(ok ? Color.green : Color.secondary)
+    private var googleSection: some View {
+        Section {
+            SecureField("Chiave di Google Voli (SerpApi)", text: $apiKey)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            if apiKey.isEmpty {
+                Label("Senza chiave vedi prezzi di esempio", systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else if let keyError {
+                Label(keyError, systemImage: "xmark.circle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            } else if let searchesLeft {
+                Label("Chiave valida: \(searchesLeft) ricerche rimaste questo mese", systemImage: "checkmark.circle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.green)
+            } else {
+                Button("Verifica la chiave") {
+                    Task { await loadSearchesLeft() }
+                }
+            }
+            if let signUp = URL(string: "https://serpapi.com/users/sign_up") {
+                Link(destination: signUp) {
+                    Label("Crea la chiave gratis", systemImage: "key")
+                }
+            }
+        } header: {
+            Text("Google Voli")
+        } footer: {
+            Text("Google non dà accesso diretto ai prezzi: li legge per te SerpApi, gratis fino a 250 ricerche al mese. Tocca \"Crea la chiave gratis\", registrati (anche con l'account Google), poi copia la \"Your Private API Key\" e incollala qui.")
+        }
     }
 
     private var notificationSection: some View {
-        Section {
+        Section("Notifiche") {
             switch notifications.authorization {
             case .authorized, .provisional, .ephemeral:
                 Label("Notifiche attive", systemImage: "bell.fill")
@@ -84,38 +100,17 @@ struct SettingsView: View {
                     Task { await notifications.requestPermission() }
                 }
             }
-            if let error = notifications.registrationError {
-                Text(error)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
-        } header: {
-            Text("Notifiche")
-        } footer: {
-            if NotificationManager.isSimulator {
-                Text("Sei nel simulatore: per provare una notifica trascina il file notifica-di-prova.apns sulla finestra del simulatore.")
-            }
         }
     }
 
-    private func deviceTokenSection(_ deviceToken: String) -> some View {
-        Section {
-            Text(deviceToken)
-                .font(.footnote.monospaced())
-                .textSelection(.enabled)
-            Button {
-                UIPasteboard.general.string = deviceToken
-                copied = true
-            } label: {
-                Label(copied ? "Copiato!" : "Copia codice", systemImage: copied ? "checkmark" : "doc.on.doc")
-            }
-            ShareLink(item: deviceToken) {
-                Label("Condividi codice", systemImage: "square.and.arrow.up")
-            }
-        } header: {
-            Text("Codice di questo iPhone")
-        } footer: {
-            Text("Incollalo su GitHub in Settings → Secrets and variables → Actions, nel secret APNS_DEVICE_TOKENS. Serve al motore per sapere a quale iPhone mandare le notifiche.")
+    private func loadSearchesLeft() async {
+        let client = GoogleFlightsClient(apiKey: apiKey)
+        guard !client.isDemo else { return }
+        do {
+            searchesLeft = try await client.searchesLeft()
+            keyError = nil
+        } catch {
+            keyError = MonitorStore.message(for: error)
         }
     }
 }
@@ -131,4 +126,5 @@ private extension Bundle {
 #Preview {
     SettingsView()
         .environmentObject(NotificationManager.shared)
+        .environmentObject(MonitorStore(preview: MonitoredFlight.samples))
 }

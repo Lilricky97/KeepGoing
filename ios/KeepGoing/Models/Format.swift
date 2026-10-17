@@ -72,15 +72,6 @@ enum Format {
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
-    /// I prossimi `count` mesi a partire da quello di `date`, come "YYYY-MM".
-    static func upcomingMonths(from date: Date = .now, count: Int = 12, calendar: Calendar = .current) -> [String] {
-        (0..<count).compactMap { offset in
-            guard let month = calendar.date(byAdding: .month, value: offset, to: date) else { return nil }
-            let parts = calendar.dateComponents([.year, .month], from: month)
-            return String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
-        }
-    }
-
     private static let utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? .current

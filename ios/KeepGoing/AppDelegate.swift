@@ -11,14 +11,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         return true
     }
 
-    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        NotificationManager.shared.didRegister(deviceToken: deviceToken)
-    }
-
-    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        NotificationManager.shared.didFailToRegister(error)
-    }
-
     // Mostra la notifica anche quando l'app è aperta.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,

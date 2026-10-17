@@ -14,12 +14,16 @@ struct RootView: View {
         var query: SearchQuery?
         #if DEBUG
         // Solo per gli screenshot automatici (.github/workflows/ios.yml): -kgScreen results|flights|detail|settings
-        switch UserDefaults.standard.string(forKey: "kgScreen") {
+        let screen = UserDefaults.standard.string(forKey: "kgScreen")
+        if ["flights", "detail", "settings"].contains(screen) {
+            MonitorStore.shared.loadSamplesForScreenshots()
+        }
+        switch screen {
         case "results": query = .preview
         case "flights": tab = .flights
         case "detail":
             tab = .flights
-            NotificationManager.shared.open(watchID: "mil-bcn-2026-12-2026-12")
+            NotificationManager.shared.open(watchID: MonitoredFlight.samples[0].id)
         case "settings": tab = .settings
         default: break
         }
@@ -52,6 +56,6 @@ struct RootView: View {
 
 #Preview {
     RootView()
-        .environmentObject(PriceStore(preview: .sample))
+        .environmentObject(MonitorStore(preview: MonitoredFlight.samples))
         .environmentObject(NotificationManager.shared)
 }
