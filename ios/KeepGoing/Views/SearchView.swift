@@ -137,7 +137,7 @@ struct SearchView: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(Color.accentColor)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
@@ -157,6 +157,7 @@ struct SearchView: View {
                     .foregroundStyle(.tertiary)
             }
         }
+        .tint(Color.primary)  // testi neri/grigi invece del colore dei pulsanti
     }
 }
 

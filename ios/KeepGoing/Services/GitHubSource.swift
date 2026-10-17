@@ -37,7 +37,9 @@ struct GitHubSource {
     // MARK: - Storico prezzi
 
     func fetchPrices(session: URLSession = .shared) async throws -> Data {
-        let (data, status) = try await send(path: "data/prices.json", accept: "application/vnd.github.raw+json", session: session)
+        let (data, status) = hasToken
+            ? try await send(path: "data/prices.json", accept: "application/vnd.github.raw+json", session: session)
+            : try await sendRaw(path: "data/prices.json", session: session)
         guard status == 200 else { throw FetchError(status: status, owner: owner, repo: repo) }
         return data
     }
@@ -46,6 +48,13 @@ struct GitHubSource {
 
     /// Il contenuto di watches.json e il suo "sha" (serve per salvarlo). Se il file non c'è: elenco vuoto.
     func fetchWatches(session: URLSession = .shared) async throws -> (WatchList, String?) {
+        guard hasToken else {
+            // Senza token si può solo leggere (per salvare serve comunque il token e lo sha).
+            let (data, status) = try await sendRaw(path: "watches.json", session: session)
+            if status == 404 { return (WatchList(), nil) }
+            guard status == 200 else { throw FetchError(status: status, owner: owner, repo: repo) }
+            return (try JSONDecoder().decode(WatchList.self, from: data), nil)
+        }
         let (data, status) = try await send(path: "watches.json", accept: "application/vnd.github+json", session: session)
         if status == 404 { return (WatchList(), nil) }
         guard status == 200 else { throw FetchError(status: status, owner: owner, repo: repo) }
@@ -96,6 +105,21 @@ struct GitHubSource {
             components.queryItems = [URLQueryItem(name: "ref", value: ref)]
         }
         return components.url
+    }
+
+    /// Lettura senza token dai file "raw" di GitHub: niente limite di 60 richieste l'ora
+    /// dell'API (condiviso da tutta la rete), ma i dati possono arrivare con qualche minuto di ritardo.
+    private func sendRaw(path: String, session: URLSession) async throws -> (Data, Int) {
+        let ref = branch.trimmingCharacters(in: .whitespaces)
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "raw.githubusercontent.com"
+        components.path = "/\(owner)/\(repo)/\(ref.isEmpty ? "HEAD" : ref)/\(path)"
+        guard let url = components.url else { throw FetchError.badRepository }
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        let (data, response) = try await session.data(for: request)
+        return (data, (response as? HTTPURLResponse)?.statusCode ?? 0)
     }
 
     private func send(path: String, accept: String, session: URLSession) async throws -> (Data, Int) {
