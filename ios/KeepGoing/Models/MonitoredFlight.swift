@@ -76,7 +76,10 @@ extension MonitoredFlight {
             name: "Milano → Barcellona", targetPrice: 80, addedAt: start
         )
         let prices: [Double] = [112, 109, 118, 97, 95, 84]
-        first.history = prices.enumerated().map { PricePoint(at: start.addingTimeInterval(Double($0.offset) * 43_200), price: $0.element) }
+        for (index, price) in prices.enumerated() {
+            let at = start.addingTimeInterval(Double(index) * 43_200)
+            first.history.append(PricePoint(at: at, price: price))
+        }
         first.baseline = 84
         first.lowest = 84
         first.best = FlightOffer(
@@ -84,12 +87,14 @@ extension MonitoredFlight {
             departureAirport: "MXP", arrivalAirport: "BCN", departureAt: "2026-12-10 09:30", arrivalAt: "2026-12-10 11:15",
             stops: 0, durationMinutes: 105
         )
-        first.insights = PriceInsights(
-            lowestPrice: 84, level: "low", typicalLow: 95, typicalHigh: 140,
-            history: (0..<30).map { day in
-                PricePoint(at: start.addingTimeInterval(Double(day - 27) * 86_400), price: 120 - Double(day) + Double((day * 7) % 11))
-            }
-        )
+        var googleHistory: [PricePoint] = []
+        for day in 0..<30 {
+            let at: Date = start.addingTimeInterval(Double(day - 27) * 86_400)
+            let wobble: Double = Double((day * 7) % 11)
+            let price: Double = 120 - Double(day) + wobble
+            googleHistory.append(PricePoint(at: at, price: price))
+        }
+        first.insights = PriceInsights(lowestPrice: 84, level: "low", typicalLow: 95, typicalHigh: 140, history: googleHistory)
         first.lastCheck = start.addingTimeInterval(5 * 43_200)
 
         var second = MonitoredFlight(

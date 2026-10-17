@@ -253,7 +253,8 @@ enum DemoSearch {
     static func result(for query: SearchQuery, now: Date) -> SearchResult {
         let route = "\(query.origin.code)-\(query.destination.code)-\(query.depart)-\(query.returnDate ?? "")-\(query.directOnly)"
         var routeRNG = SeededGenerator(seed: stableHash(route))
-        let base = Double(45 + routeRNG.next() % 140) * (query.returnDate == nil ? 1 : 1.8)
+        let tripFactor: Double = query.returnDate == nil ? 1 : 1.8
+        let base: Double = Double(45 + routeRNG.next() % 140) * tripFactor
         var rng = SeededGenerator(seed: stableHash("\(route)-\(Int(now.timeIntervalSince1970) / 600)"))
 
         let offers = (0..<12).map { _ -> FlightOffer in
@@ -263,8 +264,9 @@ enum DemoSearch {
             let hour = 6 + Int(rng.next() % 15)
             let minute = [0, 15, 30, 45][Int(rng.next() % 4)]
             let arrivalMinutes = hour * 60 + minute + duration
+            let factor: Double = 0.75 + Double(rng.next() % 80) / 100 - Double(stops) * 0.06
             return FlightOffer(
-                price: (base * (0.75 + Double(rng.next() % 80) / 100 - Double(stops) * 0.06)).rounded(),
+                price: (base * factor).rounded(),
                 currency: "EUR",
                 airline: Airlines.name(for: code),
                 airlineLogo: Airlines.logoURL(for: code),
@@ -279,11 +281,11 @@ enum DemoSearch {
         }.sorted { $0.price < $1.price }
 
         let cheapest = offers.first?.price ?? base
-        let history = (0..<30).map { day in
-            PricePoint(
-                at: now.addingTimeInterval(Double(day - 29) * 86_400),
-                price: (cheapest * (1.05 + Double(routeRNG.next() % 30) / 100)).rounded()
-            )
+        var history: [PricePoint] = []
+        for day in 0..<30 {
+            let at: Date = now.addingTimeInterval(Double(day - 29) * 86_400)
+            let factor: Double = 1.05 + Double(routeRNG.next() % 30) / 100
+            history.append(PricePoint(at: at, price: (cheapest * factor).rounded()))
         }
         let typicalLow = (base * 0.95).rounded(), typicalHigh = (base * 1.35).rounded()
         return SearchResult(

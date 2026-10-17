@@ -2,6 +2,19 @@
 
 Tutte le versioni di KeepGoing. Il README completo di ogni versione è in `docs/versions/`.
 
+## v0.3.0 — 2026-10-17
+
+Prezzi da Google Voli e controlli fatti dall'app: niente più GitHub né token.
+
+- Ricerca su Google Voli (tramite SerpApi, chiave gratuita con 250 ricerche al mese); senza chiave prezzi di esempio.
+- Giudizio di Google sul prezzo (basso, nella media, alto) con la fascia tipica e l'andamento recente nel grafico.
+- I voli monitorati restano sul telefono e l'app li ricontrolla da sola ogni 6, 12 o 24 ore, anche ad app chiusa.
+- Notifiche generate dall'app: non servono più il token GitHub, le chiavi Apple Push né l'account sviluppatore a pagamento.
+- Le città vengono cercate su tutti i loro aeroporti (Milano → Malpensa, Orio al Serio, Linate).
+- Impostazioni: chiave di Google Voli con le ricerche rimaste, frequenza dei controlli, avvisi anche quando il prezzo sale.
+- Ricerca a date precise (Google Voli non cerca su un mese intero).
+- Il motore su GitHub resta disponibile come opzione facoltativa per esperti.
+
 ## v0.2.0 — 2026-10-17
 
 I voli si cercano e si aggiungono direttamente dall'app.
