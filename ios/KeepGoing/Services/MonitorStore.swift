@@ -69,8 +69,9 @@ final class MonitorStore: ObservableObject {
     // MARK: - Aggiungere e togliere
 
     /// Aggiunge il volo usando come primo controllo la ricerca appena fatta (niente ricerche in più).
-    func add(_ query: SearchQuery, name: String, targetPrice: Double?, firstResult: SearchResult?) {
+    func add(_ query: SearchQuery, name: String, targetPrice: Double?, firstResult: SearchResult?, bestMarket: BestMarket? = nil) {
         var flight = MonitoredFlight(query: query, name: name, targetPrice: targetPrice)
+        flight.bestMarket = bestMarket
         guard !flights.contains(where: { $0.id == flight.id }) else { return }
         if let firstResult {
             // Evento "primo prezzo" non notificato: lo stai già guardando nell'app.
@@ -79,6 +80,13 @@ final class MonitorStore: ObservableObject {
         flights.append(flight)
         save()
         BackgroundRefresh.schedule()
+    }
+
+    /// Salva il paese più conveniente trovato con il confronto (VPN).
+    func setBestMarket(_ best: BestMarket?, for id: String) {
+        guard let best, let index = flights.firstIndex(where: { $0.id == id }) else { return }
+        flights[index].bestMarket = best
+        save()
     }
 
     func remove(id: String) {

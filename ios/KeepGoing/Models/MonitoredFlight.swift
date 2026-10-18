@@ -22,6 +22,7 @@ struct MonitoredFlight: Codable, Identifiable, Hashable {
     var history: [PricePoint] = []
     var lastCheck: Date?
     var lastError: String?
+    var bestMarket: BestMarket?  // ultimo confronto tra paesi (VPN)
 
     init(query: SearchQuery, name: String, targetPrice: Double?, addedAt: Date = .now) {
         id = Self.makeID(query)
@@ -96,6 +97,10 @@ extension MonitoredFlight {
         }
         first.insights = PriceInsights(lowestPrice: 84, level: "low", typicalLow: 95, typicalHigh: 140, history: googleHistory)
         first.lastCheck = Date.now.addingTimeInterval(-1800)  // mezz'ora fa: niente controllo all'apertura
+        first.bestMarket = BestMarket(
+            market: Market(code: "tr", name: "Turchia", flag: "🇹🇷"), price: 71, homePrice: 84,
+            googleURL: nil, comparedAt: Date.now.addingTimeInterval(-3600), countries: 17
+        )
 
         var second = MonitoredFlight(
             query: SearchQuery(origin: rom, destination: lon, depart: "2027-02-14", returnDate: nil, directOnly: true),

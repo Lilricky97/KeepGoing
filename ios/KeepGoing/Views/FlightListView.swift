@@ -126,6 +126,11 @@ struct FlightRow: View {
                         .font(.caption.bold())
                         .foregroundStyle(flight.insights?.level == "low" ? Color.green : flight.insights?.level == "high" ? Color.red : Color.orange)
                 }
+                if let best = flight.bestMarket, !best.isHome, !flight.isExpired() {
+                    Text("🌍 Conviene da \(best.market.flag) \(best.market.name): \(Format.price(best.price))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {

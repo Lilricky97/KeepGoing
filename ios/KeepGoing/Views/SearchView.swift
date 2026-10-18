@@ -257,6 +257,7 @@ struct SearchResultsView: View {
     @State private var error: String?
     @State private var showMonitor = false
     @State private var showCompare = false
+    @State private var bestMarket: BestMarket?
 
     var body: some View {
         List {
@@ -276,6 +277,7 @@ struct SearchResultsView: View {
                         InsightsRow(insights: insights)
                     }
                 }
+                BestMarketSection(best: bestMarket) { showCompare = true }
                 if let history = result.insights?.history, HistoryChart.hasData(google: history) {
                     Section("Andamento del prezzo (Google Voli)") {
                         HistoryChart(google: history)
@@ -313,19 +315,12 @@ struct SearchResultsView: View {
                     }
                 }
                 DepartureTimesSection(offers: result.offers)
-                Section {
-                    Button {
-                        showCompare = true
-                    } label: {
-                        Label("Confronta i prezzi da altri paesi (VPN)", systemImage: "globe.europe.africa")
-                    }
-                    if let url = result.googleURL {
+                if let url = result.googleURL {
+                    Section {
                         Link(destination: url) {
                             Label("Apri la ricerca su Google Voli", systemImage: "safari")
                         }
                     }
-                } footer: {
-                    Text("Lo stesso volo può costare meno cercandolo da un altro paese: l'app ti dice dove conviene collegarsi con la VPN.")
                 }
             }
         }
@@ -346,6 +341,9 @@ struct SearchResultsView: View {
         .navigationTitle(query.title)
         .inlineNavigationTitle()
         .task {
+            if bestMarket == nil {
+                bestMarket = store.flight(id: MonitoredFlight.makeID(query))?.bestMarket  // confronto già fatto
+            }
             if result == nil { await load() }
             #if DEBUG
             if DebugScreen.current == "compare" { showCompare = true }
@@ -353,10 +351,13 @@ struct SearchResultsView: View {
         }
         .refreshable { await load() }
         .sheet(isPresented: $showMonitor) {
-            MonitorSheet(query: query, result: result, onDone: onMonitored)
+            MonitorSheet(query: query, result: result, bestMarket: bestMarket, onDone: onMonitored)
         }
         .sheet(isPresented: $showCompare) {
-            MarketCompareView(query: query)
+            MarketCompareView(query: query) { best in
+                bestMarket = best
+                store.setBestMarket(best, for: MonitoredFlight.makeID(query))  // se lo stai già monitorando
+            }
         }
     }
 
@@ -486,6 +487,7 @@ struct AirlineLogo: View {
 struct MonitorSheet: View {
     let query: SearchQuery
     let result: SearchResult?
+    var bestMarket: BestMarket?
     var onDone: () -> Void
 
     @EnvironmentObject private var store: MonitorStore
@@ -495,9 +497,10 @@ struct MonitorSheet: View {
     @State private var useTarget: Bool
     @State private var target: Double
 
-    init(query: SearchQuery, result: SearchResult?, onDone: @escaping () -> Void) {
+    init(query: SearchQuery, result: SearchResult?, bestMarket: BestMarket? = nil, onDone: @escaping () -> Void) {
         self.query = query
         self.result = result
+        self.bestMarket = bestMarket
         self.onDone = onDone
         let cheapest = result?.cheapest?.price
         _name = State(initialValue: query.title)
@@ -547,7 +550,8 @@ struct MonitorSheet: View {
                             query,
                             name: trimmed.isEmpty ? query.title : trimmed,
                             targetPrice: useTarget ? target : nil,
-                            firstResult: result
+                            firstResult: result,
+                            bestMarket: bestMarket
                         )
                         Task {
                             // Senza permesso le notifiche non arrivano: chiederlo qui ha senso per l'utente.

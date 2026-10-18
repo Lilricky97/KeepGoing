@@ -2,7 +2,7 @@ import Foundation
 
 /// Un paese da cui cercare su Google Voli (parametro `gl`). Lo stesso volo può costare
 /// meno cercandolo da un altro paese: è l'idea del "trucco della VPN".
-struct Market: Identifiable, Hashable {
+struct Market: Codable, Identifiable, Hashable {
     var code: String  // codice paese di Google, es. "it"
     var name: String
     var flag: String
@@ -32,8 +32,31 @@ enum Markets {
         Market(code: "ar", name: "Argentina", flag: "🇦🇷"),
     ]
 
-    /// Selezione iniziale: pochi paesi, così il confronto costa poche ricerche.
-    static let defaultSelection: Set<String> = ["it", "uk", "us", "de", "tr", "in"]
+    /// Paesi da confrontare: tutti, a meno che l'utente non ne abbia scelti alcuni.
+    static func selection(defaults: UserDefaults = .standard) -> Set<String> {
+        guard let saved = defaults.stringArray(forKey: "compare.markets"), !saved.isEmpty else {
+            return Set(all.map(\.code))
+        }
+        return Set(saved)
+    }
+
+    static func saveSelection(_ codes: Set<String>, defaults: UserDefaults = .standard) {
+        defaults.set(codes.sorted(), forKey: "compare.markets")
+    }
+}
+
+/// Il paese più conveniente trovato per un volo, da mostrare ovunque.
+struct BestMarket: Codable, Hashable {
+    var market: Market
+    var price: Double
+    var homePrice: Double?  // prezzo cercando dall'Italia
+    var googleURL: URL?
+    var comparedAt: Date
+    var countries: Int  // quanti paesi sono stati confrontati
+
+    /// Risparmio rispetto all'Italia (nil se l'Italia non era nel confronto).
+    var saving: Double? { homePrice.map { $0 - price } }
+    var isHome: Bool { market.code == Markets.home.code }
 }
 
 /// Il volo più economico trovato cercando da un paese.
@@ -65,5 +88,18 @@ enum MarketComparison {
         guard let best = sorted(prices).first, let bestPrice = best.price else { return nil }
         let home = prices.first { $0.market.code == Markets.home.code }?.price
         return (best, home.map { $0 - bestPrice })
+    }
+
+    /// Riassunto da salvare e mostrare (nil se nessun paese ha restituito un prezzo).
+    static func summary(_ prices: [MarketPrice], at date: Date = .now) -> BestMarket? {
+        guard let best = sorted(prices).first, let price = best.price else { return nil }
+        return BestMarket(
+            market: best.market,
+            price: price,
+            homePrice: prices.first { $0.market.code == Markets.home.code }?.price,
+            googleURL: best.googleURL,
+            comparedAt: date,
+            countries: prices.filter { $0.price != nil }.count
+        )
     }
 }

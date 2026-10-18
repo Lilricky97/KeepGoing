@@ -33,6 +33,9 @@ struct FlightDetailView: View {
                     InsightsRow(insights: insights)
                 }
             }
+            if !flight.isExpired() || flight.bestMarket != nil {
+                BestMarketSection(best: flight.bestMarket) { showCompare = true }
+            }
             if HistoryChart.hasData(google: flight.insights?.history ?? [], checks: flight.history) {
                 Section("Andamento del prezzo") {
                     HistoryChart(google: flight.insights?.history ?? [], checks: flight.history, target: flight.targetPrice)
@@ -74,12 +77,6 @@ struct FlightDetailView: View {
             }
             Section {
                 Button {
-                    showCompare = true
-                } label: {
-                    Label("Confronta i prezzi da altri paesi (VPN)", systemImage: "globe.europe.africa")
-                }
-                .disabled(flight.isExpired())
-                Button {
                     Task { await store.refresh(id: flight.id, ifOlderThan: 0) }
                 } label: {
                     Label("Controlla adesso", systemImage: "arrow.clockwise")
@@ -95,7 +92,9 @@ struct FlightDetailView: View {
         .navigationTitle(flight.name)
         .refreshable { await store.refresh(id: flight.id, ifOlderThan: 0) }
         .sheet(isPresented: $showCompare) {
-            MarketCompareView(query: flight.query)
+            MarketCompareView(query: flight.query) { best in
+                store.setBestMarket(best, for: flight.id)
+            }
         }
         .confirmationDialog("Smettere di monitorare \(flight.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Smetti di monitorare", role: .destructive) {
