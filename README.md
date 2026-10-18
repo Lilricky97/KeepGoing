@@ -1,12 +1,14 @@
 # KeepGoing ✈️
 
-**Ti avvisa sull'iPhone quando il prezzo di un volo cambia, soprattutto quando scende.**
+**Ti avvisa sull'iPhone e sul Mac quando il prezzo di un volo cambia, soprattutto quando scende.**
 
 Nell'app cerchi un volo su **Google Voli** (es. Milano → Barcellona, 10–17 dicembre), vedi i prezzi e il giudizio di Google ("prezzo basso", "nella media", "alto") e tocchi **Monitora**. Da quel momento KeepGoing ricontrolla il prezzo da sola e, se scende, sale o va sotto la cifra che hai scelto, ti manda una notifica sullo schermo, anche ad app chiusa.
 
+In più ti mostra **quando** conviene (fascia oraria di partenza, giorno e ora in cui il prezzo scende) e **da dove**: lo stesso volo cercato da altri paesi, per capire dove collegarti con la VPN per pagarlo meno.
+
 Niente server da configurare, niente account GitHub, niente chiavi Apple: serve solo una chiave gratuita per leggere Google Voli.
 
-> Versione **0.3.0**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
+> Versione **0.4.0**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -16,8 +18,10 @@ Niente server da configurare, niente account GitHub, niente chiavi Apple: serve 
  📱 KeepGoing
    Cerca ─────────► Google Voli (tramite SerpApi) ─► voli dal più economico
                                                      + giudizio di Google sul prezzo
+                                                     + grafico degli ultimi giorni e orari più economici
+   Confronta paesi ► lo stesso volo cercato da 🇬🇧 🇺🇸 🇹🇷 🇮🇳 … ─► dove conviene la VPN
    Monitora ──────► il volo resta salvato sul telefono
-   Ogni 6/12/24 ore, anche ad app chiusa:
+   Ogni 6/12/24 ore (iPhone: anche ad app chiusa · Mac: finché l'app è aperta):
       ricontrolla Google Voli ─► il prezzo è cambiato abbastanza? ─► 🔔 notifica a schermo
                                                                      toccala → si apre il volo
 ```
@@ -51,6 +55,7 @@ Google Voli: prezzo basso.
 |---|---|---|
 | Mac con Xcode | gratis (Mac App Store) | per installare l'app |
 | iPhone con iOS 17 o successivo | | oppure il simulatore di Xcode |
+| Mac con macOS 14 o successivo | | per usare KeepGoing anche sul Mac (stessa app) |
 | Chiave di Google Voli ([SerpApi](https://serpapi.com)) | gratis, 250 ricerche al mese | senza chiave l'app funziona con prezzi di esempio |
 | [Apple Developer Program](https://developer.apple.com/programs/) | 99 €/anno, **facoltativo** | senza, sull'iPhone l'app va reinstallata da Xcode ogni 7 giorni |
 
@@ -63,6 +68,20 @@ Google Voli: prezzo basso.
 3. Scheda **Cerca**: tocca **Da**, scrivi "mil" e scegli Milano (tutti gli aeroporti) o un aeroporto; poi **A**, le date e **Cerca su Google Voli**.
 4. Tocca **Monitora questo volo** → **Monitora** e consenti le notifiche.
 5. Per vedere una notifica: aspetta una decina di minuti (senza chiave i prezzi di esempio cambiano ogni 10 minuti), poi in **I miei voli** trascina la lista verso il basso per ricontrollare. Se il prezzo è cambiato abbastanza arriva la notifica; toccandola si apre il volo.
+
+---
+
+## Usare l'app sul Mac
+
+È la stessa app, compilata per il Mac: sul Mac i controlli sono più regolari, perché l'app resta aperta.
+
+1. Apri `ios/KeepGoing.xcodeproj` con Xcode.
+2. In alto, accanto a **KeepGoing**, scegli **My Mac** come destinazione e premi ▶︎. Non servono account né firme.
+3. Si apre la finestra di KeepGoing e in alto a destra, nella barra dei menu, compare l'icona ✈︎ con i prezzi dei voli monitorati.
+
+Se chiudi la finestra KeepGoing continua a lavorare dalla barra dei menu: ogni 15 minuti guarda se qualche volo va ricontrollato e ti manda la notifica. Per chiuderla del tutto: icona ✈︎ → **Esci da KeepGoing**. Per riaverla sempre, aggiungila in Impostazioni di Sistema → Generali → **Elementi login**.
+
+Sul Mac la chiave di Google Voli è salvata nelle preferenze dell'app invece che nel Portachiavi, perché un'app compilata da Xcode senza account sviluppatore cambierebbe firma a ogni compilazione e il Portachiavi chiederebbe ogni volta la password.
 
 ---
 
@@ -91,9 +110,11 @@ Ogni ricerca e ogni controllo di un volo usano una ricerca. Controllando ogni 12
 ## L'app
 
 - **Cerca**: partenza e arrivo con suggerimenti mentre scrivi (città con tutti i suoi aeroporti, o un singolo aeroporto), date, andata e ritorno o solo andata, solo voli diretti. I risultati di Google Voli sono ordinati dal più economico, con compagnia, orari, scali e durata, e c'è il giudizio di Google sul prezzo. **Apri la ricerca su Google Voli** apre la stessa ricerca sul sito di Google.
+- **Grafici subito**: già nei risultati c'è l'andamento del prezzo degli ultimi giorni secondo Google e il prezzo di ogni volo in base all'**ora di partenza**, con la fascia più economica ("I voli più economici partono di mattina").
+- **Confronta i prezzi da altri paesi (VPN)**: scegli i paesi (Regno Unito, Stati Uniti, Germania, Turchia, India…) e l'app cerca lo stesso volo su Google Voli come se fossi lì. Ti dice il paese più conveniente e quanto risparmi rispetto all'Italia, con il link a Google Voli per ciascuno. Ogni paese usa una ricerca.
 - **Monitora questo volo**: aggiunge il volo ai tuoi, con un prezzo obiettivo facoltativo. Il primo prezzo è quello che stai già guardando, quindi non consuma ricerche.
 - **I miei voli**: prezzo attuale, variazione e giudizio di Google per ogni volo. Trascina in giù per ricontrollare subito; scorri un volo a sinistra per toglierlo.
-- **Dettaglio**: grafico con l'andamento secondo Google Voli e i tuoi controlli, il volo più economico, **Controlla adesso**, **Smetti di monitorare**.
+- **Dettaglio**: si aggiorna da solo quando lo apri (se l'ultimo controllo ha più di un'ora). Grafico con l'andamento secondo Google Voli e i tuoi controlli; **Quando conviene**: il giorno della settimana in cui il prezzo è stato più basso e, man mano che l'app fa controlli, l'ora del giorno in cui scende; il volo più economico, **Confronta i prezzi da altri paesi**, **Controlla adesso**, **Smetti di monitorare**.
 - **Impostazioni**: chiave di Google Voli con le ricerche rimaste, frequenza dei controlli (6, 12 o 24 ore), avvisi anche quando il prezzo sale, notifiche.
 
 ---
@@ -104,7 +125,10 @@ Ogni ricerca e ogni controllo di un volo usano una ricerca. Controllando ogni 12
 - **Date precise**: Google Voli cerca giorni precisi, non un mese intero.
 - **Ricerche**: 250 al mese con il piano gratuito di SerpApi; quando finiscono l'app te lo dice e i controlli riprendono il mese dopo.
 - **Prezzi**: sono quelli mostrati da Google Voli al momento del controllo; il prezzo finale si conferma sul sito della compagnia o dell'agenzia.
-- **Apple ID gratuito**: l'app installata da Xcode dura 7 giorni, poi va reinstallata (i voli monitorati restano).
+- **Apple ID gratuito**: sull'iPhone l'app installata da Xcode dura 7 giorni, poi va reinstallata (i voli monitorati restano). Sul Mac non scade.
+- **Confronto tra paesi e VPN**: Google converte i prezzi in euro; al pagamento la banca può applicare cambio e commissioni, alcune compagnie chiedono carta o indirizzo del paese e i termini di certi siti vietano la VPN. È un'indicazione: controlla sempre il prezzo finale.
+- **"Quando conviene"**: il giorno si basa sullo storico di Google (circa due mesi); l'ora del giorno sui tuoi controlli, quindi diventa affidabile solo dopo un po' di controlli.
+- **iPhone e Mac non si sincronizzano**: ognuno ha i suoi voli monitorati.
 
 ---
 
@@ -134,15 +158,15 @@ python -m unittest                        # test automatici
 ## Struttura del progetto
 
 ```
-ios/KeepGoing.xcodeproj        ← l'app iPhone (SwiftUI)
+ios/KeepGoing.xcodeproj        ← l'app per iPhone e Mac (SwiftUI)
 ios/KeepGoing/
-  Models/                      ←   voli, ricerca, logica dei prezzi (PriceTracker.swift)
+  Models/                      ←   voli, ricerca, logica dei prezzi (PriceTracker), analisi (PriceAnalysis), paesi (Markets)
   Services/                    ←   Google Voli, suggerimenti, voli salvati, controlli in background
   Views/                       ←   schermate
 ios/KeepGoing-Info.plist       ←   permesso per i controlli ad app chiusa
 keepgoing/                     ← motore Python facoltativo
 config.toml                    ←   impostazioni del motore
-.github/workflows/             ← compilazione dell'app con screenshot, test, motore
+.github/workflows/             ← compilazione dell'app (iPhone e Mac) con screenshot, test, motore
 tests/                         ← test del motore
 docs/versions/                 ← il README di ogni versione
 obsidian/                      ← nota Obsidian con tutti i README

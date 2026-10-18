@@ -2,6 +2,16 @@
 
 Tutte le versioni di KeepGoing. Il README completo di ogni versione è in `docs/versions/`.
 
+## v0.4.0 — 2026-10-18
+
+App anche per Mac, grafici subito, orari e giorni convenienti e confronto dei prezzi tra paesi per la VPN.
+
+- La stessa app gira su iPhone e su Mac; sul Mac resta nella barra dei menu e ricontrolla i prezzi da sola finché è aperta.
+- Nei risultati della ricerca: andamento del prezzo degli ultimi giorni secondo Google e prezzo per orario di partenza, con la fascia più economica.
+- Dettaglio di un volo: si aggiorna all'apertura se l'ultimo controllo ha più di un'ora; nuova sezione "Quando conviene" con il giorno della settimana e l'ora del giorno in cui il prezzo è più basso.
+- Confronto tra paesi: lo stesso volo cercato su Google Voli da altri paesi, con il più conveniente, il risparmio rispetto all'Italia e il link per ciascuno.
+- Icona per Mac; la compilazione automatica su GitHub verifica e fotografa anche la versione per Mac.
+
 ## v0.3.0 — 2026-10-17
 
 Prezzi da Google Voli e controlli fatti dall'app: niente più GitHub né token.
