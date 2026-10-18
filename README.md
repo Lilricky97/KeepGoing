@@ -4,7 +4,7 @@
 
 Nell'app cerchi un volo su **Google Voli** (es. Milano → Barcellona, 10–17 dicembre), vedi i prezzi e il giudizio di Google ("prezzo basso", "nella media", "alto") e tocchi **Monitora**. Da quel momento KeepGoing ricontrolla il prezzo da sola e, se scende, sale o va sotto la cifra che hai scelto, ti manda una notifica sullo schermo, anche ad app chiusa.
 
-In più ti mostra **quando** conviene (fascia oraria di partenza, giorno e ora in cui il prezzo scende) e **da dove**: lo stesso volo cercato da altri paesi, per capire dove collegarti con la VPN per pagarlo meno.
+In più ti mostra **quando** conviene (fascia oraria di partenza, giorno e ora in cui il prezzo scende) e **da dove**: cerca lo stesso volo da 17 paesi e ti dice in quale collegarti con la VPN per pagarlo meno.
 
 Niente server da configurare, niente account GitHub, niente chiavi Apple: serve solo una chiave gratuita per leggere Google Voli.
 
@@ -19,7 +19,7 @@ Niente server da configurare, niente account GitHub, niente chiavi Apple: serve 
    Cerca ─────────► Google Voli (tramite SerpApi) ─► voli dal più economico
                                                      + giudizio di Google sul prezzo
                                                      + grafico degli ultimi giorni e orari più economici
-   Confronta paesi ► lo stesso volo cercato da 🇬🇧 🇺🇸 🇹🇷 🇮🇳 … ─► dove conviene la VPN
+   Dove conviene ──► lo stesso volo cercato da 17 paesi 🇬🇧 🇺🇸 🇹🇷 🇮🇳 … ─► "Collegati da 🇹🇷 Turchia: 71 €" 
    Monitora ──────► il volo resta salvato sul telefono
    Ogni 6/12/24 ore (iPhone: anche ad app chiusa · Mac: finché l'app è aperta):
       ricontrolla Google Voli ─► il prezzo è cambiato abbastanza? ─► 🔔 notifica a schermo
@@ -103,7 +103,7 @@ Google non offre un accesso gratuito diretto ai prezzi dei voli; li legge per te
 2. Nella dashboard di SerpApi copia la **Your Private API Key**.
 3. Incollala in **Impostazioni** → **Google Voli**: sotto compare "Chiave valida" con le ricerche rimaste.
 
-Ogni ricerca e ogni controllo di un volo usano una ricerca. Controllando ogni 12 ore, un volo ne usa circa 60 al mese: con il piano gratuito puoi monitorarne circa 4 (con 24 ore, circa 8). Le Impostazioni ti mostrano la stima per i tuoi voli.
+Ogni ricerca, ogni controllo di un volo e ogni paese del confronto usano una ricerca (un confronto completo ne usa 17). Controllando ogni 12 ore, un volo ne usa circa 60 al mese: con il piano gratuito puoi monitorarne circa 4 (con 24 ore, circa 8). Le Impostazioni ti mostrano la stima per i tuoi voli.
 
 ---
 
@@ -111,10 +111,10 @@ Ogni ricerca e ogni controllo di un volo usano una ricerca. Controllando ogni 12
 
 - **Cerca**: partenza e arrivo con suggerimenti mentre scrivi (città con tutti i suoi aeroporti, o un singolo aeroporto), date, andata e ritorno o solo andata, solo voli diretti. I risultati di Google Voli sono ordinati dal più economico, con compagnia, orari, scali e durata, e c'è il giudizio di Google sul prezzo. **Apri la ricerca su Google Voli** apre la stessa ricerca sul sito di Google.
 - **Grafici subito**: già nei risultati c'è l'andamento del prezzo degli ultimi giorni secondo Google e il prezzo di ogni volo in base all'**ora di partenza**, con la fascia più economica ("I voli più economici partono di mattina").
-- **Confronta i prezzi da altri paesi (VPN)**: scegli i paesi (Regno Unito, Stati Uniti, Germania, Turchia, India…) e l'app cerca lo stesso volo su Google Voli come se fossi lì. Ti dice il paese più conveniente e quanto risparmi rispetto all'Italia, con il link a Google Voli per ciascuno. Ogni paese usa una ricerca.
+- **Dove conviene collegarsi (VPN)**: tocca **Trova il paese più conveniente** e l'app cerca subito lo stesso volo su Google Voli da tutti i 17 paesi (Regno Unito, Stati Uniti, Germania, Turchia, India, Brasile…). In cima vedi il paese da cui collegarti, il prezzo e quanto risparmi rispetto all'Italia, con il link a Google Voli "come da lì"; sotto, il prezzo in ogni paese. Il risultato resta salvato con il volo monitorato e compare anche in **I miei voli**. Ogni paese usa una ricerca: se vuoi risparmiarne, in **Paesi da confrontare** puoi togliere quelli che non ti interessano.
 - **Monitora questo volo**: aggiunge il volo ai tuoi, con un prezzo obiettivo facoltativo. Il primo prezzo è quello che stai già guardando, quindi non consuma ricerche.
 - **I miei voli**: prezzo attuale, variazione e giudizio di Google per ogni volo. Trascina in giù per ricontrollare subito; scorri un volo a sinistra per toglierlo.
-- **Dettaglio**: si aggiorna da solo quando lo apri (se l'ultimo controllo ha più di un'ora). Grafico con l'andamento secondo Google Voli e i tuoi controlli; **Quando conviene**: il giorno della settimana in cui il prezzo è stato più basso e, man mano che l'app fa controlli, l'ora del giorno in cui scende; il volo più economico, **Confronta i prezzi da altri paesi**, **Controlla adesso**, **Smetti di monitorare**.
+- **Dettaglio**: si aggiorna da solo quando lo apri (se l'ultimo controllo ha più di un'ora). Grafico con l'andamento secondo Google Voli e i tuoi controlli; **Quando conviene**: il giorno della settimana in cui il prezzo è stato più basso e, man mano che l'app fa controlli, l'ora del giorno in cui scende; il paese da cui conviene collegarsi, il volo più economico, **Controlla adesso**, **Smetti di monitorare**.
 - **Impostazioni**: chiave di Google Voli con le ricerche rimaste, frequenza dei controlli (6, 12 o 24 ore), avvisi anche quando il prezzo sale, notifiche.
 
 ---
