@@ -9,7 +9,8 @@ App anche per Mac, grafici subito, orari e giorni convenienti e confronto dei pr
 - La stessa app gira su iPhone e su Mac; sul Mac resta nella barra dei menu e ricontrolla i prezzi da sola finché è aperta.
 - Nei risultati della ricerca: andamento del prezzo degli ultimi giorni secondo Google e prezzo per orario di partenza, con la fascia più economica.
 - Dettaglio di un volo: si aggiorna all'apertura se l'ultimo controllo ha più di un'ora; nuova sezione "Quando conviene" con il giorno della settimana e l'ora del giorno in cui il prezzo è più basso.
-- "Dove conviene collegarsi": lo stesso volo cercato su Google Voli da 17 paesi in un tocco; in cima il paese più conveniente per la VPN, il risparmio rispetto all'Italia e il link per ciascuno. La scelta dei paesi è facoltativa.
+- "Dove conviene collegarsi": lo stesso volo cercato su Google Voli da più paesi in un tocco; in cima il paese più conveniente per la VPN, il risparmio rispetto all'Italia e il link per ciascuno.
+- Di base il confronto usa 6 paesi (Italia, Turchia, India, Brasile, Argentina, Polonia: 6 ricerche); se vuoi puoi aggiungere gli altri, fino a 17, o tornare ai consigliati.
 - Il paese più conveniente resta salvato con il volo monitorato e compare anche nella lista "I miei voli".
 - Icona per Mac; la compilazione automatica su GitHub verifica e fotografa anche la versione per Mac.
 

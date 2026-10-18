@@ -99,7 +99,7 @@ extension MonitoredFlight {
         first.lastCheck = Date.now.addingTimeInterval(-1800)  // mezz'ora fa: niente controllo all'apertura
         first.bestMarket = BestMarket(
             market: Market(code: "tr", name: "Turchia", flag: "🇹🇷"), price: 71, homePrice: 84,
-            googleURL: nil, comparedAt: Date.now.addingTimeInterval(-3600), countries: 17
+            googleURL: nil, comparedAt: Date.now.addingTimeInterval(-3600), countries: 6
         )
 
         var second = MonitoredFlight(

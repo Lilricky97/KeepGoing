@@ -32,10 +32,14 @@ enum Markets {
         Market(code: "ar", name: "Argentina", flag: "🇦🇷"),
     ]
 
-    /// Paesi da confrontare: tutti, a meno che l'utente non ne abbia scelti alcuni.
+    /// Scelta iniziale: l'Italia come riferimento e i paesi dove di solito i voli costano meno.
+    /// Sei ricerche invece di diciassette; gli altri paesi si possono aggiungere.
+    static let recommended: Set<String> = ["it", "tr", "in", "br", "ar", "pl"]
+
+    /// Paesi da confrontare: quelli scelti dall'utente, altrimenti i consigliati.
     static func selection(defaults: UserDefaults = .standard) -> Set<String> {
         guard let saved = defaults.stringArray(forKey: "compare.markets"), !saved.isEmpty else {
-            return Set(all.map(\.code))
+            return recommended
         }
         return Set(saved)
     }

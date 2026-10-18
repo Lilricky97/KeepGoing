@@ -84,7 +84,9 @@ struct MarketCompareView: View {
                         Text("\(market.flag)  \(market.name)")
                     }
                 }
-                Button("Tutti") { selected = Set(Markets.all.map(\.code)) }
+                Button("Consigliati (\(Markets.recommended.count))") { setSelection(Markets.recommended) }
+                    .disabled(selected == Markets.recommended)
+                Button("Tutti (\(Markets.all.count))") { setSelection(Set(Markets.all.map(\.code))) }
                     .disabled(selected.count == Markets.all.count)
             } label: {
                 Text("Paesi da confrontare: \(selected.count) di \(Markets.all.count)")
@@ -96,8 +98,13 @@ struct MarketCompareView: View {
             }
             .disabled(selected.isEmpty || running)
         } footer: {
-            Text("Ogni paese usa una ricerca di Google Voli (250 gratuite al mese). Togli qualche paese per risparmiarne.")
+            Text("Di base confronto l'Italia con i paesi dove di solito i voli costano meno. Ogni paese usa una ricerca di Google Voli (250 gratuite al mese): aggiungine altri se vuoi un confronto più ampio.")
         }
+    }
+
+    private func setSelection(_ codes: Set<String>) {
+        selected = codes
+        Markets.saveSelection(codes)
     }
 
     private func binding(for market: Market) -> Binding<Bool> {
