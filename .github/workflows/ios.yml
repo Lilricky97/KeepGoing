@@ -75,14 +75,17 @@ jobs:
         run: |
           APP=build-mac/Build/Products/Debug/KeepGoing.app
           mkdir -p screenshots
-          for screen in results detail; do
-            "$APP/Contents/MacOS/KeepGoing" -kgScreen "$screen" &
-            PID=$!
+          for screen in results flights detail settings; do
+            open -n -W "$APP" --args -kgScreen "$screen" &
             sleep 15
-            kill -0 $PID || { echo "L'app per Mac si è chiusa da sola (crash?)"; exit 1; }
+            PID=$(pgrep -n -f "KeepGoing.app/Contents/MacOS/KeepGoing") || { echo "L'app per Mac si è chiusa da sola (crash?)"; exit 1; }
             screencapture -x "screenshots/mac-$screen.png" || echo "screenshot non disponibile"
-            kill $PID
-            sleep 2
+            # Se l'app fosse bloccata, qui si vede dove (stack del thread principale)
+            sample "$PID" 2 -file "screenshots/mac-$screen-sample.txt" > /dev/null 2>&1 || true
+            osascript -e 'tell application "KeepGoing" to quit' || kill "$PID"
+            sleep 3
+            pkill -f "KeepGoing.app/Contents/MacOS/KeepGoing" || true
+            sleep 1
           done
 
       - uses: actions/upload-artifact@v4

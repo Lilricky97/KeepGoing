@@ -413,10 +413,17 @@ struct OfferRow: View {
     let offer: FlightOffer
     var link: URL?
 
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
         if let link {
-            Link(destination: link) { content }
-                .tint(Color.primary)
+            // Pulsante "semplice" invece di Link: i testi restano neri/grigi anche sul Mac.
+            Button {
+                openURL(link)
+            } label: {
+                content.contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         } else {
             content
         }
