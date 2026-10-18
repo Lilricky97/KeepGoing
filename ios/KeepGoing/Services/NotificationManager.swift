@@ -1,4 +1,4 @@
-import UIKit
+import Foundation
 import UserNotifications
 
 /// Permesso per le notifiche, invio delle notifiche e apertura del volo toccato in una notifica.

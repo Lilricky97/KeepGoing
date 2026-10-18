@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 struct FlightDetailView: View {
@@ -7,6 +6,7 @@ struct FlightDetailView: View {
     @EnvironmentObject private var store: MonitorStore
     @Environment(\.dismiss) private var dismiss
     @State private var confirmRemove = false
+    @State private var showCompare = false
 
     var body: some View {
         Group {
@@ -16,7 +16,11 @@ struct FlightDetailView: View {
                 ContentUnavailableView("Volo non trovato", systemImage: "airplane.circle")
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
+        .task {
+            // Grafico aggiornato appena apri il volo (se l'ultimo controllo ha più di un'ora).
+            await store.refresh(id: flightID, ifOlderThan: 3600)
+        }
     }
 
     private func content(_ flight: MonitoredFlight) -> some View {
@@ -29,13 +33,13 @@ struct FlightDetailView: View {
                     InsightsRow(insights: insights)
                 }
             }
-            if PriceChart.hasData(flight) {
+            if HistoryChart.hasData(google: flight.insights?.history ?? [], checks: flight.history) {
                 Section("Andamento del prezzo") {
-                    PriceChart(flight: flight)
-                        .frame(height: 230)
+                    HistoryChart(google: flight.insights?.history ?? [], checks: flight.history, target: flight.targetPrice)
                         .padding(.vertical, 8)
                 }
             }
+            WhenCheaperSection(flight: flight)
             if let offer = flight.best {
                 Section("Volo più economico") {
                     OfferRow(offer: offer, link: flight.googleURL)
@@ -70,7 +74,13 @@ struct FlightDetailView: View {
             }
             Section {
                 Button {
-                    Task { await store.checkDue(force: true) }
+                    showCompare = true
+                } label: {
+                    Label("Confronta i prezzi da altri paesi (VPN)", systemImage: "globe.europe.africa")
+                }
+                .disabled(flight.isExpired())
+                Button {
+                    Task { await store.refresh(id: flight.id, ifOlderThan: 0) }
                 } label: {
                     Label("Controlla adesso", systemImage: "arrow.clockwise")
                 }
@@ -83,7 +93,10 @@ struct FlightDetailView: View {
             }
         }
         .navigationTitle(flight.name)
-        .refreshable { await store.checkDue(force: true) }
+        .refreshable { await store.refresh(id: flight.id, ifOlderThan: 0) }
+        .sheet(isPresented: $showCompare) {
+            MarketCompareView(query: flight.query)
+        }
         .confirmationDialog("Smettere di monitorare \(flight.name)?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Smetti di monitorare", role: .destructive) {
                 store.remove(id: flight.id)
@@ -129,45 +142,6 @@ private struct PriceHeader: View {
             }
         }
         .padding(.vertical, 4)
-    }
-}
-
-/// L'andamento secondo Google Voli (grigio) e i prezzi dei tuoi controlli (blu).
-private struct PriceChart: View {
-    let flight: MonitoredFlight
-
-    static func hasData(_ flight: MonitoredFlight) -> Bool {
-        (flight.insights?.history.count ?? 0) >= 2 || flight.history.count >= 2
-    }
-
-    var body: some View {
-        Chart {
-            ForEach(flight.insights?.history ?? []) { point in
-                LineMark(x: .value("Data", point.at), y: .value("Prezzo", point.price), series: .value("Serie", "Google"))
-                    .interpolationMethod(.stepEnd)
-                    .foregroundStyle(by: .value("Fonte", "Google Voli"))
-            }
-            ForEach(flight.history) { point in
-                LineMark(x: .value("Data", point.at), y: .value("Prezzo", point.price), series: .value("Serie", "Controlli"))
-                    .interpolationMethod(.stepEnd)
-                    .foregroundStyle(by: .value("Fonte", "I tuoi controlli"))
-                PointMark(x: .value("Data", point.at), y: .value("Prezzo", point.price))
-                    .foregroundStyle(by: .value("Fonte", "I tuoi controlli"))
-            }
-            if let target = flight.targetPrice {
-                RuleMark(y: .value("Obiettivo", target))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    .foregroundStyle(.orange)
-                    .annotation(position: .top, alignment: .leading) {
-                        Text("Obiettivo")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
-            }
-        }
-        .chartForegroundStyleScale(["Google Voli": Color.gray.opacity(0.6), "I tuoi controlli": Color.accentColor])
-        .chartYScale(domain: .automatic(includesZero: false))
-        .chartLegend(position: .bottom)
     }
 }
 

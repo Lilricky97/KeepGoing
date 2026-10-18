@@ -1,8 +1,12 @@
 import Foundation
+#if os(iOS)
 import Security
+#endif
 
-/// Salva piccoli segreti (il token GitHub) nel Portachiavi dell'iPhone.
+/// Salva la chiave di Google Voli.
 enum Keychain {
+    #if os(iOS)
+    // iPhone: nel Portachiavi.
     private static let service = "keepgoing"
 
     static func read(_ account: String) -> String? {
@@ -32,4 +36,19 @@ enum Keychain {
             kSecAttrAccount as String: account,
         ]
     }
+    #else
+    // Mac: l'app compilata da Xcode senza account sviluppatore cambia firma a ogni compilazione e
+    // il Portachiavi chiederebbe ogni volta la password. La chiave (gratuita) resta nelle preferenze.
+    static func read(_ account: String) -> String? {
+        UserDefaults.standard.string(forKey: "secret.\(account)")
+    }
+
+    static func save(_ value: String, account: String) {
+        if value.isEmpty {
+            UserDefaults.standard.removeObject(forKey: "secret.\(account)")
+        } else {
+            UserDefaults.standard.set(value, forKey: "secret.\(account)")
+        }
+    }
+    #endif
 }

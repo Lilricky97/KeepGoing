@@ -1,10 +1,10 @@
 import SwiftUI
-import UIKit
 
 /// Scheda "Impostazioni": chiave di Google Voli, frequenza dei controlli e notifiche.
 struct SettingsView: View {
     @EnvironmentObject private var notifications: NotificationManager
     @EnvironmentObject private var store: MonitorStore
+    @Environment(\.openURL) private var openURL
 
     @State private var apiKey = Keychain.read(GoogleFlightsClient.keyAccount) ?? ""
     @State private var searchesLeft: Int?
@@ -24,13 +24,18 @@ struct SettingsView: View {
                 } header: {
                     Text("Controlli dei prezzi")
                 } footer: {
-                    Text("Con i voli che monitori ora servono circa \(store.estimatedSearchesPerMonth) ricerche al mese (il piano gratuito ne ha 250). I controlli ad app chiusa li fa partire iOS quando vuole, di solito qualche volta al giorno; non partono se chiudi l'app scorrendola via.")
+                    if Platform.isMac {
+                        Text("Con i voli che monitori ora servono circa \(store.estimatedSearchesPerMonth) ricerche al mese (il piano gratuito ne ha 250). Sul Mac i controlli partono da soli finché KeepGoing è aperta, anche solo con l'icona nella barra dei menu.")
+                    } else {
+                        Text("Con i voli che monitori ora servono circa \(store.estimatedSearchesPerMonth) ricerche al mese (il piano gratuito ne ha 250). I controlli ad app chiusa li fa partire iOS quando vuole, di solito qualche volta al giorno; non partono se chiudi l'app scorrendola via.")
+                    }
                 }
                 notificationSection
                 Section {
                     LabeledContent("Versione", value: Bundle.main.appVersion)
                 }
             }
+            .formStyle(.grouped)
             .navigationTitle("Impostazioni")
             .task {
                 await notifications.refreshStatus()
@@ -50,7 +55,7 @@ struct SettingsView: View {
     private var googleSection: some View {
         Section {
             SecureField("Chiave di Google Voli (SerpApi)", text: $apiKey)
-                .textInputAutocapitalization(.never)
+                .noAutoCapitalization()
                 .autocorrectionDisabled()
             if apiKey.isEmpty {
                 Label("Senza chiave vedi prezzi di esempio", systemImage: "info.circle")
@@ -90,10 +95,8 @@ struct SettingsView: View {
             case .denied:
                 Label("Notifiche disattivate", systemImage: "bell.slash.fill")
                     .foregroundStyle(.red)
-                Button("Apri Impostazioni di iOS") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
+                Button(Platform.isMac ? "Apri Impostazioni di Sistema" : "Apri Impostazioni di iOS") {
+                    if let url = Platform.notificationSettingsURL { openURL(url) }
                 }
             default:
                 Button("Attiva le notifiche") {

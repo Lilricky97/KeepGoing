@@ -71,6 +71,7 @@ struct SearchView: View {
                     }
                 }
             }
+            .formStyle(.grouped)
             .navigationTitle("Cerca voli")
             .navigationDestination(item: $activeQuery) { query in
                 SearchResultsView(query: query, onMonitored: onMonitored)
@@ -189,7 +190,7 @@ struct PlacePickerView: View {
                     )
                 }
             }
-            .searchable(text: $text, placement: .navigationBarDrawer(displayMode: .always), prompt: "Città o aeroporto")
+            .alwaysVisibleSearch(text: $text, prompt: "Città o aeroporto")
             .autocorrectionDisabled()
             .task(id: text) {
                 try? await Task.sleep(for: .milliseconds(300))  // aspetta che finisca di scrivere
@@ -202,13 +203,14 @@ struct PlacePickerView: View {
                 }
             }
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annulla") { dismiss() }
                 }
             }
         }
+        .sheetSize()
     }
 
     /// Un codice scritto a mano (es. "BCN"), se non è già tra i suggerimenti.
@@ -254,6 +256,7 @@ struct SearchResultsView: View {
     @State private var result: SearchResult?
     @State private var error: String?
     @State private var showMonitor = false
+    @State private var showCompare = false
 
     var body: some View {
         List {
@@ -271,6 +274,12 @@ struct SearchResultsView: View {
                 if let insights = result.insights, insights.levelText != nil {
                     Section {
                         InsightsRow(insights: insights)
+                    }
+                }
+                if let history = result.insights?.history, HistoryChart.hasData(google: history) {
+                    Section("Andamento del prezzo (Google Voli)") {
+                        HistoryChart(google: history)
+                            .padding(.vertical, 6)
                     }
                 }
                 Section {
@@ -303,12 +312,20 @@ struct SearchResultsView: View {
                         Text(query.returnDate == nil ? "Prezzi a persona, solo andata." : "Prezzi a persona, andata e ritorno; gli orari sono dell'andata.")
                     }
                 }
-                if let url = result.googleURL {
-                    Section {
+                DepartureTimesSection(offers: result.offers)
+                Section {
+                    Button {
+                        showCompare = true
+                    } label: {
+                        Label("Confronta i prezzi da altri paesi (VPN)", systemImage: "globe.europe.africa")
+                    }
+                    if let url = result.googleURL {
                         Link(destination: url) {
                             Label("Apri la ricerca su Google Voli", systemImage: "safari")
                         }
                     }
+                } footer: {
+                    Text("Lo stesso volo può costare meno cercandolo da un altro paese: l'app ti dice dove conviene collegarsi con la VPN.")
                 }
             }
         }
@@ -327,11 +344,19 @@ struct SearchResultsView: View {
             }
         }
         .navigationTitle(query.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .task { if result == nil { await load() } }
+        .inlineNavigationTitle()
+        .task {
+            if result == nil { await load() }
+            #if DEBUG
+            if UserDefaults.standard.string(forKey: "kgScreen") == "compare" { showCompare = true }
+            #endif
+        }
         .refreshable { await load() }
         .sheet(isPresented: $showMonitor) {
             MonitorSheet(query: query, result: result, onDone: onMonitored)
+        }
+        .sheet(isPresented: $showCompare) {
+            MarketCompareView(query: query)
         }
     }
 
@@ -501,8 +526,9 @@ struct MonitorSheet: View {
                     Text("Ti avviso comunque a ogni ribasso. L'obiettivo aggiunge un avviso speciale quando il prezzo ci scende sotto.")
                 }
             }
+            .formStyle(.grouped)
             .navigationTitle("Monitora")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annulla") { dismiss() }
@@ -527,6 +553,7 @@ struct MonitorSheet: View {
                 }
             }
         }
+        .sheetSize()
     }
 }
 

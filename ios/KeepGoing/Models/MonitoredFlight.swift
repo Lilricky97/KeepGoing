@@ -95,7 +95,7 @@ extension MonitoredFlight {
             googleHistory.append(PricePoint(at: at, price: price))
         }
         first.insights = PriceInsights(lowestPrice: 84, level: "low", typicalLow: 95, typicalHigh: 140, history: googleHistory)
-        first.lastCheck = start.addingTimeInterval(5 * 43_200)
+        first.lastCheck = Date.now.addingTimeInterval(-1800)  // mezz'ora fa: niente controllo all'apertura
 
         var second = MonitoredFlight(
             query: SearchQuery(origin: rom, destination: lon, depart: "2027-02-14", returnDate: nil, directOnly: true),
@@ -110,7 +110,7 @@ extension MonitoredFlight {
             stops: 0, durationMinutes: 175
         )
         second.insights = PriceInsights(lowestPrice: 64, level: "typical", typicalLow: 55, typicalHigh: 90)
-        second.lastCheck = start.addingTimeInterval(5 * 43_200)
+        second.lastCheck = Date.now.addingTimeInterval(-1800)
         return [first, second]
     }()
 }

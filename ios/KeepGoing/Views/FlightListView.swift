@@ -45,9 +45,20 @@ struct FlightListView: View {
                                     Label("Non monitorare", systemImage: "bell.slash")
                                 }
                             }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    store.remove(id: flight.id)
+                                } label: {
+                                    Label("Non monitorare", systemImage: "bell.slash")
+                                }
+                            }
                         }
                     } footer: {
-                        Text("Ricontrollo i prezzi circa ogni \(store.checkIntervalHours) ore, anche ad app chiusa (iOS decide il momento esatto). Trascina in giù per controllare subito; scorri un volo a sinistra per toglierlo.")
+                        if Platform.isMac {
+                            Text("Ricontrollo i prezzi circa ogni \(store.checkIntervalHours) ore finché KeepGoing è aperta (basta l'icona ✈︎ nella barra dei menu). Tasto destro su un volo per toglierlo.")
+                        } else {
+                            Text("Ricontrollo i prezzi circa ogni \(store.checkIntervalHours) ore, anche ad app chiusa (iOS decide il momento esatto). Trascina in giù per controllare subito; scorri un volo a sinistra per toglierlo.")
+                        }
                     }
                 }
             }
@@ -64,6 +75,18 @@ struct FlightListView: View {
                 }
             }
             .navigationTitle("I miei voli")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    if Platform.isMac {
+                        Button {
+                            Task { await store.checkDue(force: true) }
+                        } label: {
+                            Label("Controlla adesso", systemImage: "arrow.clockwise")
+                        }
+                        .disabled(store.flights.isEmpty || !store.checking.isEmpty)
+                    }
+                }
+            }
             .navigationDestination(for: String.self) { id in
                 FlightDetailView(flightID: id)
             }

@@ -13,13 +13,13 @@ struct RootView: View {
         var tab = AppTab.search
         var query: SearchQuery?
         #if DEBUG
-        // Solo per gli screenshot automatici (.github/workflows/ios.yml): -kgScreen results|flights|detail|settings
+        // Solo per gli screenshot automatici (.github/workflows/ios.yml): -kgScreen results|compare|flights|detail|settings
         let screen = UserDefaults.standard.string(forKey: "kgScreen")
         if ["flights", "detail", "settings"].contains(screen) {
             MonitorStore.shared.loadSamplesForScreenshots()
         }
         switch screen {
-        case "results": query = .preview
+        case "results", "compare": query = .preview
         case "flights": tab = .flights
         case "detail":
             tab = .flights

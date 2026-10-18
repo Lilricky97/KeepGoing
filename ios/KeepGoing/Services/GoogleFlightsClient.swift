@@ -19,9 +19,10 @@ struct GoogleFlightsClient {
 
     var isDemo: Bool { apiKey.nonEmpty == nil }
 
-    func search(_ query: SearchQuery, now: Date = .now) async throws -> SearchResult {
+    /// `country` è il paese da cui "cerchi" su Google Voli (lo stesso volo può costare diverso).
+    func search(_ query: SearchQuery, country: String = Markets.home.code, now: Date = .now) async throws -> SearchResult {
         guard let key = apiKey.nonEmpty else {
-            return DemoSearch.result(for: query, now: now)
+            return DemoSearch.result(for: query, now: now, country: country)
         }
         let from = await PlaceSearch.searchCodes(for: query.origin)
         let to = await PlaceSearch.searchCodes(for: query.destination)
@@ -34,7 +35,7 @@ struct GoogleFlightsClient {
             URLQueryItem(name: "type", value: query.returnDate == nil ? "2" : "1"),
             URLQueryItem(name: "currency", value: "EUR"),
             URLQueryItem(name: "hl", value: "it"),
-            URLQueryItem(name: "gl", value: "it"),
+            URLQueryItem(name: "gl", value: country),
             URLQueryItem(name: "api_key", value: key),
         ]
         if let returnDate = query.returnDate {
@@ -47,15 +48,37 @@ struct GoogleFlightsClient {
         guard let url = components.url else { throw SearchError.http(0) }
 
         let (data, response) = try await session.data(from: url)
-        return try Self.parse(data, status: (response as? HTTPURLResponse)?.statusCode ?? 0, query: query)
+        return try Self.parse(data, status: (response as? HTTPURLResponse)?.statusCode ?? 0, query: query, country: country)
+    }
+
+    /// Lo stesso volo cercato da più paesi, dal più economico. Ogni paese usa una ricerca.
+    func compare(_ query: SearchQuery, markets: [Market], now: Date = .now) async -> [MarketPrice] {
+        let prices = await withTaskGroup(of: MarketPrice.self) { group in
+            for market in markets {
+                group.addTask {
+                    do {
+                        let result = try await search(query, country: market.code, now: now)
+                        return MarketPrice(market: market, cheapest: result.cheapest, googleURL: result.googleURL)
+                    } catch {
+                        return MarketPrice(market: market, error: error.localizedDescription)
+                    }
+                }
+            }
+            var all: [MarketPrice] = []
+            for await price in group {
+                all.append(price)
+            }
+            return all
+        }
+        return MarketComparison.sorted(prices)
     }
 
     /// Legge la risposta di SerpApi (separata da `search` per poterla testare).
-    static func parse(_ data: Data, status: Int, query: SearchQuery) throws -> SearchResult {
+    static func parse(_ data: Data, status: Int, query: SearchQuery, country: String = Markets.home.code) throws -> SearchResult {
         let payload = try? JSONDecoder().decode(SerpResponse.self, from: data)
         if let error = payload?.error {
             if error.contains("hasn't returned any results") {
-                return SearchResult(offers: [], insights: nil, googleURL: googleFlightsURL(for: query), isSample: false)
+                return SearchResult(offers: [], insights: nil, googleURL: googleFlightsURL(for: query, country: country), isSample: false)
             }
             if status == 401 || error.localizedCaseInsensitiveContains("api key") { throw SearchError.badKey }
             if error.localizedCaseInsensitiveContains("run out of searches") { throw SearchError.noSearchesLeft }
@@ -69,7 +92,7 @@ struct GoogleFlightsClient {
         return SearchResult(
             offers: offers,
             insights: payload.priceInsights?.insights,
-            googleURL: payload.searchMetadata?.googleFlightsURL.flatMap { URL(string: $0) } ?? googleFlightsURL(for: query),
+            googleURL: payload.searchMetadata?.googleFlightsURL.flatMap { URL(string: $0) } ?? googleFlightsURL(for: query, country: country),
             isSample: false
         )
     }
@@ -87,7 +110,7 @@ struct GoogleFlightsClient {
     }
 
     /// Link alla stessa ricerca sul sito di Google Voli.
-    static func googleFlightsURL(for query: SearchQuery) -> URL? {
+    static func googleFlightsURL(for query: SearchQuery, country: String = Markets.home.code) -> URL? {
         var text = "Voli da \(query.origin.code) a \(query.destination.code) il \(query.depart)"
         if let back = query.returnDate {
             text += " ritorno il \(back)"
@@ -98,6 +121,7 @@ struct GoogleFlightsClient {
         components?.queryItems = [
             URLQueryItem(name: "q", value: text),
             URLQueryItem(name: "hl", value: "it"),
+            URLQueryItem(name: "gl", value: country),
             URLQueryItem(name: "curr", value: "EUR"),
         ]
         return components?.url
@@ -250,11 +274,14 @@ private struct SerpAccount: Decodable {
 enum DemoSearch {
     private static let airlines = ["FR", "U2", "VY", "AZ", "W6", "IB", "LH", "AF", "KL", "V7"]
 
-    static func result(for query: SearchQuery, now: Date) -> SearchResult {
+    static func result(for query: SearchQuery, now: Date, country: String = Markets.home.code) -> SearchResult {
         let route = "\(query.origin.code)-\(query.destination.code)-\(query.depart)-\(query.returnDate ?? "")-\(query.directOnly)"
         var routeRNG = SeededGenerator(seed: stableHash(route))
         let tripFactor: Double = query.returnDate == nil ? 1 : 1.8
-        let base: Double = Double(45 + routeRNG.next() % 140) * tripFactor
+        // Ogni paese ha il suo "listino": tra -15% e +12% rispetto all'Italia.
+        var countryRNG = SeededGenerator(seed: stableHash("\(route)-\(country)"))
+        let countryFactor: Double = country == Markets.home.code ? 1 : 0.85 + Double(countryRNG.next() % 28) / 100
+        let base: Double = Double(45 + routeRNG.next() % 140) * tripFactor * countryFactor
         var rng = SeededGenerator(seed: stableHash("\(route)-\(Int(now.timeIntervalSince1970) / 600)"))
 
         let offers = (0..<12).map { _ -> FlightOffer in
@@ -297,7 +324,7 @@ enum DemoSearch {
                 typicalHigh: typicalHigh,
                 history: history
             ),
-            googleURL: GoogleFlightsClient.googleFlightsURL(for: query),
+            googleURL: GoogleFlightsClient.googleFlightsURL(for: query, country: country),
             isSample: true
         )
     }

@@ -92,12 +92,40 @@ final class MonitorStore: ObservableObject {
     /// `force` = tutti, subito (es. "trascina per aggiornare").
     @discardableResult
     func checkDue(force: Bool = false, now: Date = .now) async -> Int {
-        let interval = TimeInterval(checkIntervalHours) * 3600 * 0.9  // un po' di margine: iOS non è puntuale
+        let interval = TimeInterval(checkIntervalHours) * 3600 * 0.9  // un po' di margine: i controlli non sono puntuali
         let due = flights.filter { flight in
-            guard !flight.isExpired(today: now), !checking.contains(flight.id) else { return false }
             guard !force, let last = flight.lastCheck else { return true }
             return now.timeIntervalSince(last) >= interval
         }
+        return await check(due.map(\.id), now: now)
+    }
+
+    /// Aggiorna un volo se l'ultimo controllo è più vecchio di `maxAge` (es. quando lo apri).
+    func refresh(id: String, ifOlderThan maxAge: TimeInterval = 3600, now: Date = .now) async {
+        guard let flight = flight(id: id) else { return }
+        if let last = flight.lastCheck, now.timeIntervalSince(last) < maxAge { return }
+        await check([id], now: now)
+    }
+
+    #if os(macOS)
+    private var autoCheckTask: Task<Void, Never>?
+
+    /// Sul Mac l'app resta aperta (anche solo nella barra dei menu): ogni 15 minuti
+    /// guarda se qualche volo va ricontrollato.
+    func startAutoChecks() {
+        guard autoCheckTask == nil else { return }
+        autoCheckTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.checkDue()
+                try? await Task.sleep(for: .seconds(15 * 60))
+            }
+        }
+    }
+    #endif
+
+    @discardableResult
+    private func check(_ ids: [String], now: Date) async -> Int {
+        let due = flights.filter { ids.contains($0.id) && !$0.isExpired(today: now) && !checking.contains($0.id) }
         guard !due.isEmpty else { return 0 }
 
         let client = GoogleFlightsClient.current()
