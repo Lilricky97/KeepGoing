@@ -25,6 +25,9 @@ struct FlightListView: View {
                             .foregroundStyle(.orange)
                     }
                 }
+                if store.usesSamplePrices && !store.flights.isEmpty {
+                    SampleNotice()  // con la chiave i voli passano da soli ai prezzi veri
+                }
                 if let error = store.lastError {
                     Section {
                         Label(error, systemImage: "exclamationmark.triangle.fill")

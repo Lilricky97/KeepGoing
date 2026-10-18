@@ -10,7 +10,7 @@ La logica delle notifiche esiste in due copie che devono restare uguali: `keepgo
 ## Convenzioni
 
 - Testi per l'utente (notifiche, CLI, app, README) in italiano; identificatori in inglese.
-- Test: `python -m unittest` (devono passare prima di ogni commit). L'app viene compilata e avviata nel simulatore da `.github/workflows/ios.yml` (screenshot negli artifact); in Debug `-kgScreen search|results|compare|flights|detail|settings` apre una schermata precisa (con voli di esempio), anche sul Mac. La parte non grafica dell'app (modelli, PriceTracker, client) compila anche con Swift su Linux.
+- Test: `python -m unittest` (devono passare prima di ogni commit). L'app viene compilata e avviata nel simulatore da `.github/workflows/ios.yml` (screenshot negli artifact); in Debug `-kgScreen search|results|compare|key|flights|detail|settings` apre una schermata precisa (con voli di esempio), anche sul Mac. La parte non grafica dell'app (modelli, PriceTracker, client) compila anche con Swift su Linux.
 
 ## Nuova versione
 

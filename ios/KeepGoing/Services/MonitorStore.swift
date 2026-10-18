@@ -8,6 +8,8 @@ final class MonitorStore: ObservableObject {
     @Published private(set) var flights: [MonitoredFlight] = []
     @Published private(set) var checking: Set<String> = []
     @Published var lastError: String?
+    /// Nessuna chiave di Google Voli: l'app usa prezzi di esempio.
+    @Published private(set) var usesSamplePrices = GoogleFlightsClient.current().isDemo
 
     /// Ogni quante ore ricontrollare un volo (ogni controllo usa una ricerca di Google Voli).
     @Published var checkIntervalHours: Int {
@@ -72,6 +74,7 @@ final class MonitorStore: ObservableObject {
     func add(_ query: SearchQuery, name: String, targetPrice: Double?, firstResult: SearchResult?, bestMarket: BestMarket? = nil) {
         var flight = MonitoredFlight(query: query, name: name, targetPrice: targetPrice)
         flight.bestMarket = bestMarket
+        flight.samplePrices = firstResult?.isSample
         guard !flights.contains(where: { $0.id == flight.id }) else { return }
         if let firstResult {
             // Evento "primo prezzo" non notificato: lo stai già guardando nell'app.
@@ -95,6 +98,18 @@ final class MonitorStore: ObservableObject {
     }
 
     // MARK: - Controlli
+
+    /// La chiave di Google Voli è stata cambiata (o tolta).
+    func keyChanged() {
+        usesSamplePrices = GoogleFlightsClient.current().isDemo
+    }
+
+    /// Chiave appena verificata: i voli che hanno ancora i prezzi di esempio passano subito a quelli veri.
+    func switchToRealPrices() async {
+        keyChanged()
+        guard !usesSamplePrices else { return }
+        await check(flights.filter { $0.samplePrices != false }.map(\.id), now: .now)
+    }
 
     /// Controlla i voli non ancora partiti il cui ultimo controllo è più vecchio della frequenza scelta.
     /// `force` = tutti, subito (es. "trascina per aggiornare").
@@ -157,6 +172,10 @@ final class MonitorStore: ObservableObject {
                 guard let index = flights.firstIndex(where: { $0.id == id }) else { continue }  // tolto nel frattempo
                 switch outcome {
                 case let .success(result):
+                    if (flights[index].samplePrices ?? true) != result.isSample {
+                        flights[index].clearPrices()  // da prezzi di esempio a veri (o viceversa)
+                    }
+                    flights[index].samplePrices = result.isSample
                     if let event = PriceTracker.update(&flights[index], with: result, at: now, settings: trackerSettings) {
                         events += 1
                         await NotificationManager.shared.post(event)

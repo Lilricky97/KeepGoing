@@ -2,6 +2,16 @@
 
 Tutte le versioni di KeepGoing. Il README completo di ogni versione è in `docs/versions/`.
 
+## v0.4.1 — 2026-10-18
+
+Prezzi veri di Google Voli in pochi tocchi.
+
+- L'avviso "Prezzi di esempio" ha il pulsante **Usa i prezzi veri**: apre la configurazione guidata della chiave gratuita di SerpApi in 3 passi.
+- Pulsante **Incolla** per la chiave e controllo immediato (chiave valida, ricerche rimaste, oppure l'errore).
+- Con la chiave valida la ricerca e il confronto tra paesi ripartono con i prezzi veri, e i voli monitorati passano subito ai prezzi veri ripartendo da zero (niente notifiche calcolate sui prezzi di esempio).
+- In **I miei voli** un avviso ricorda quando i prezzi sono ancora di esempio.
+- Paesi con lo stesso prezzo sempre nello stesso ordine.
+
 ## v0.4.0 — 2026-10-18
 
 App anche per Mac, grafici subito, orari e giorni convenienti e confronto dei prezzi tra paesi per la VPN.

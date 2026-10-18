@@ -8,7 +8,7 @@ In più ti mostra **quando** conviene (fascia oraria di partenza, giorno e ora i
 
 Niente server da configurare, niente account GitHub, niente chiavi Apple: serve solo una chiave gratuita per leggere Google Voli.
 
-> Versione **0.4.0**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
+> Versione **0.4.1**: tutte le versioni sono in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -99,9 +99,10 @@ Sul Mac la chiave di Google Voli è salvata nelle preferenze dell'app invece che
 
 Google non offre un accesso gratuito diretto ai prezzi dei voli; li legge per te **SerpApi**, gratis fino a 250 ricerche al mese.
 
-1. Nell'app: **Impostazioni** → **Crea la chiave gratis** (oppure vai su [serpapi.com](https://serpapi.com/users/sign_up)) e registrati, anche con l'account Google.
+1. Nell'app tocca **Usa i prezzi veri** sull'avviso "Prezzi di esempio" (oppure vai in **Impostazioni** → **Google Voli**), poi **Crea la chiave gratis** e registrati su SerpApi, anche con l'account Google.
 2. Nella dashboard di SerpApi copia la **Your Private API Key**.
-3. Incollala in **Impostazioni** → **Google Voli**: sotto compare "Chiave valida" con le ricerche rimaste.
+3. Torna nell'app e tocca **Incolla**: la chiave viene controllata subito e compare "Chiave valida" con le ricerche rimaste. Sul simulatore iPhone basta copiarla sul Mac: il simulatore usa gli stessi appunti.
+4. Tocca **Mostra i prezzi veri**: la ricerca riparte con i prezzi di Google Voli e i voli che monitori passano subito ai prezzi veri (ripartendo da zero, così nessuna notifica viene calcolata sui prezzi di esempio).
 
 Ogni ricerca, ogni controllo di un volo e ogni paese del confronto usano una ricerca (il confronto tra paesi ne usa 6, oppure quanti paesi scegli). Controllando ogni 12 ore, un volo ne usa circa 60 al mese: con il piano gratuito puoi monitorarne circa 4 (con 24 ore, circa 8). Le Impostazioni ti mostrano la stima per i tuoi voli.
 
@@ -115,7 +116,7 @@ Ogni ricerca, ogni controllo di un volo e ogni paese del confronto usano una ric
 - **Monitora questo volo**: aggiunge il volo ai tuoi, con un prezzo obiettivo facoltativo. Il primo prezzo è quello che stai già guardando, quindi non consuma ricerche.
 - **I miei voli**: prezzo attuale, variazione e giudizio di Google per ogni volo. Trascina in giù per ricontrollare subito; scorri un volo a sinistra per toglierlo.
 - **Dettaglio**: si aggiorna da solo quando lo apri (se l'ultimo controllo ha più di un'ora). Grafico con l'andamento secondo Google Voli e i tuoi controlli; **Quando conviene**: il giorno della settimana in cui il prezzo è stato più basso e, man mano che l'app fa controlli, l'ora del giorno in cui scende; il paese da cui conviene collegarsi, il volo più economico, **Controlla adesso**, **Smetti di monitorare**.
-- **Impostazioni**: chiave di Google Voli con le ricerche rimaste, frequenza dei controlli (6, 12 o 24 ore), avvisi anche quando il prezzo sale, notifiche.
+- **Impostazioni**: chiave di Google Voli (con **Incolla** e controllo immediato) e ricerche rimaste, frequenza dei controlli (6, 12 o 24 ore), avvisi anche quando il prezzo sale, notifiche.
 
 ---
 

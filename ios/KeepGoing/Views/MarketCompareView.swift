@@ -50,10 +50,8 @@ struct MarketCompareView: View {
     @ViewBuilder
     private func resultSections(_ results: [MarketPrice]) -> some View {
         if isSample {
-            Section {
-                Label("Prezzi di esempio: con la chiave di Google Voli vedi quelli veri.", systemImage: "info.circle.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
+            SampleNotice {
+                Task { await run() }  // rifà il confronto con i prezzi veri
             }
         }
         if let best = MarketComparison.summary(results) {

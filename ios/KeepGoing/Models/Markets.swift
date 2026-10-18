@@ -79,7 +79,7 @@ enum MarketComparison {
     static func sorted(_ prices: [MarketPrice]) -> [MarketPrice] {
         prices.sorted { a, b in
             switch (a.price, b.price) {
-            case let (x?, y?): return x < y
+            case let (x?, y?): return x != y ? x < y : a.market.name < b.market.name  // stesso prezzo: ordine fisso
             case (_?, nil): return true
             case (nil, _?): return false
             case (nil, nil): return a.market.name < b.market.name

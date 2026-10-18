@@ -16,7 +16,7 @@ struct RootView: View {
         // Solo lettura: i dati di esempio li prepara DebugScreen.prepare() una volta sola all'avvio.
         // (RootView viene ricreata a ogni cambiamento: qui non si deve modificare niente.)
         switch DebugScreen.current {
-        case "results", "compare": query = .preview
+        case "results", "compare", "key": query = .preview
         case "flights", "detail": tab = .flights
         case "settings": tab = .settings
         default: break
@@ -56,7 +56,7 @@ struct RootView: View {
 
 #if DEBUG
 /// Solo per gli screenshot automatici (.github/workflows/ios.yml):
-/// `-kgScreen search|results|compare|flights|detail|settings` apre una schermata precisa.
+/// `-kgScreen search|results|compare|key|flights|detail|settings` apre una schermata precisa.
 enum DebugScreen {
     static let current = UserDefaults.standard.string(forKey: "kgScreen")
 

@@ -263,13 +263,9 @@ struct SearchResultsView: View {
         List {
             if let result {
                 if result.isSample {
-                    Section {
-                        Label(
-                            "Prezzi di esempio: inserisci la chiave di Google Voli nelle Impostazioni per vedere quelli veri.",
-                            systemImage: "info.circle.fill"
-                        )
-                        .font(.subheadline)
-                        .foregroundStyle(.blue)
+                    SampleNotice {
+                        self.result = nil  // rifà la ricerca con i prezzi veri
+                        Task { await load() }
                     }
                 }
                 if let insights = result.insights, insights.levelText != nil {

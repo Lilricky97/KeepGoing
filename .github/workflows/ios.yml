@@ -62,7 +62,7 @@ jobs:
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/KeepGoing.app
           mkdir -p screenshots
           # Una schermata per volta (vedi RootView.swift, solo in Debug)
-          for screen in search results compare flights detail settings; do
+          for screen in search results compare key flights detail settings; do
             xcrun simctl terminate "$UDID" com.lilricky97.keepgoing 2>/dev/null || true
             xcrun simctl launch "$UDID" com.lilricky97.keepgoing -kgScreen "$screen"
             sleep 12
@@ -75,7 +75,7 @@ jobs:
         run: |
           APP=build-mac/Build/Products/Debug/KeepGoing.app
           mkdir -p screenshots
-          for screen in results flights detail settings; do
+          for screen in results key flights detail settings; do
             open -n -W "$APP" --args -kgScreen "$screen" &
             sleep 15
             PID=$(pgrep -n -f "KeepGoing.app/Contents/MacOS/KeepGoing") || { echo "L'app per Mac si è chiusa da sola (crash?)"; exit 1; }

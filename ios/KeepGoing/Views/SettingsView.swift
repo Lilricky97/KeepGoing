@@ -6,14 +6,10 @@ struct SettingsView: View {
     @EnvironmentObject private var store: MonitorStore
     @Environment(\.openURL) private var openURL
 
-    @State private var apiKey = Keychain.read(GoogleFlightsClient.keyAccount) ?? ""
-    @State private var searchesLeft: Int?
-    @State private var keyError: String?
-
     var body: some View {
         NavigationStack {
             Form {
-                googleSection
+                GoogleKeySection()
                 Section {
                     Picker("Controlla ogni", selection: $store.checkIntervalHours) {
                         Text("6 ore").tag(6)
@@ -39,50 +35,10 @@ struct SettingsView: View {
             .navigationTitle("Impostazioni")
             .task {
                 await notifications.refreshStatus()
-                await loadSearchesLeft()
-            }
-            .onChange(of: apiKey) { _, value in
-                Keychain.save(value.trimmingCharacters(in: .whitespacesAndNewlines), account: GoogleFlightsClient.keyAccount)
-                searchesLeft = nil
-                keyError = nil
             }
             .onChange(of: store.checkIntervalHours) { _, _ in
                 BackgroundRefresh.schedule()
             }
-        }
-    }
-
-    private var googleSection: some View {
-        Section {
-            SecureField("Chiave di Google Voli (SerpApi)", text: $apiKey)
-                .noAutoCapitalization()
-                .autocorrectionDisabled()
-            if apiKey.isEmpty {
-                Label("Senza chiave vedi prezzi di esempio", systemImage: "info.circle")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else if let keyError {
-                Label(keyError, systemImage: "xmark.circle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            } else if let searchesLeft {
-                Label("Chiave valida: \(searchesLeft) ricerche rimaste questo mese", systemImage: "checkmark.circle.fill")
-                    .font(.footnote)
-                    .foregroundStyle(.green)
-            } else {
-                Button("Verifica la chiave") {
-                    Task { await loadSearchesLeft() }
-                }
-            }
-            if let signUp = URL(string: "https://serpapi.com/users/sign_up") {
-                Link(destination: signUp) {
-                    Label("Crea la chiave gratis", systemImage: "key")
-                }
-            }
-        } header: {
-            Text("Google Voli")
-        } footer: {
-            Text("Google non dà accesso diretto ai prezzi: li legge per te SerpApi, gratis fino a 250 ricerche al mese. Tocca \"Crea la chiave gratis\", registrati (anche con l'account Google), poi copia la \"Your Private API Key\" e incollala qui.")
         }
     }
 
@@ -103,17 +59,6 @@ struct SettingsView: View {
                     Task { await notifications.requestPermission() }
                 }
             }
-        }
-    }
-
-    private func loadSearchesLeft() async {
-        let client = GoogleFlightsClient(apiKey: apiKey)
-        guard !client.isDemo else { return }
-        do {
-            searchesLeft = try await client.searchesLeft()
-            keyError = nil
-        } catch {
-            keyError = MonitorStore.message(for: error)
         }
     }
 }

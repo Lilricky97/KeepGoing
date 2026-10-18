@@ -23,6 +23,7 @@ struct MonitoredFlight: Codable, Identifiable, Hashable {
     var lastCheck: Date?
     var lastError: String?
     var bestMarket: BestMarket?  // ultimo confronto tra paesi (VPN)
+    var samplePrices: Bool?  // true = prezzi di esempio (senza chiave); nil nei voli salvati prima della 0.4.0
 
     init(query: SearchQuery, name: String, targetPrice: Double?, addedAt: Date = .now) {
         id = Self.makeID(query)
@@ -55,6 +56,19 @@ struct MonitoredFlight: Codable, Identifiable, Hashable {
     var lastChange: Double? {
         guard history.count >= 2 else { return nil }
         return history[history.count - 1].price - history[history.count - 2].price
+    }
+
+    /// Prezzi di esempio e prezzi veri non si mescolano: passando dagli uni agli altri
+    /// il volo riparte da zero (niente notifiche calcolate su prezzi inventati).
+    mutating func clearPrices() {
+        baseline = nil
+        lowest = nil
+        targetNotified = false
+        best = nil
+        insights = nil
+        history = []
+        lastError = nil
+        bestMarket = nil
     }
 
     /// Il volo è già partito: non serve più controllarlo.
