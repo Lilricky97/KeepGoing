@@ -13,17 +13,11 @@ struct RootView: View {
         var tab = AppTab.search
         var query: SearchQuery?
         #if DEBUG
-        // Solo per gli screenshot automatici (.github/workflows/ios.yml): -kgScreen results|compare|flights|detail|settings
-        let screen = UserDefaults.standard.string(forKey: "kgScreen")
-        if ["flights", "detail", "settings"].contains(screen) {
-            MonitorStore.shared.loadSamplesForScreenshots()
-        }
-        switch screen {
+        // Solo lettura: i dati di esempio li prepara DebugScreen.prepare() una volta sola all'avvio.
+        // (RootView viene ricreata a ogni cambiamento: qui non si deve modificare niente.)
+        switch DebugScreen.current {
         case "results", "compare": query = .preview
-        case "flights": tab = .flights
-        case "detail":
-            tab = .flights
-            NotificationManager.shared.open(watchID: MonitoredFlight.samples[0].id)
+        case "flights", "detail": tab = .flights
         case "settings": tab = .settings
         default: break
         }
@@ -59,3 +53,22 @@ struct RootView: View {
         .environmentObject(MonitorStore(preview: MonitoredFlight.samples))
         .environmentObject(NotificationManager.shared)
 }
+
+#if DEBUG
+/// Solo per gli screenshot automatici (.github/workflows/ios.yml):
+/// `-kgScreen search|results|compare|flights|detail|settings` apre una schermata precisa.
+enum DebugScreen {
+    static let current = UserDefaults.standard.string(forKey: "kgScreen")
+
+    /// Da chiamare una volta sola, all'avvio dell'app.
+    @MainActor
+    static func prepare() {
+        if ["flights", "detail", "settings"].contains(current) {
+            MonitorStore.shared.loadSamplesForScreenshots()
+        }
+        if current == "detail" {
+            NotificationManager.shared.open(watchID: MonitoredFlight.samples[0].id)
+        }
+    }
+}
+#endif

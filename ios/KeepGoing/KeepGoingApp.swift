@@ -9,6 +9,9 @@ struct KeepGoingApp: App {
 
     init() {
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
+        #if DEBUG
+        DebugScreen.prepare()
+        #endif
         #if os(macOS)
         MonitorStore.shared.startAutoChecks()  // sul Mac l'app resta aperta e controlla da sola
         #endif

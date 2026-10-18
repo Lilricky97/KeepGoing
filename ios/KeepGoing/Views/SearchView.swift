@@ -348,7 +348,7 @@ struct SearchResultsView: View {
         .task {
             if result == nil { await load() }
             #if DEBUG
-            if UserDefaults.standard.string(forKey: "kgScreen") == "compare" { showCompare = true }
+            if DebugScreen.current == "compare" { showCompare = true }
             #endif
         }
         .refreshable { await load() }
